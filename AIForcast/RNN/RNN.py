@@ -9,7 +9,7 @@ from tensorflow.keras.layers import LSTM
 from tensorflow.keras.models import Sequential, load_model
 
 # tf.compat.v1.disable_eager_execution()
-data_path = 'D:/Projects/Senior Design/AI-Forecast-master'
+data_path = '/'
 offset = 8
 
 

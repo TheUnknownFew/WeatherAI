@@ -6,12 +6,11 @@ from tkinter import messagebox
 import numpy as np
 
 from tensorflow.keras.models import load_model
-from DataAccess import APIAccess
+from AIForcast.access import APIAccess
 ########    add   #################
-from DataAccess import HistAccess
-from DataAccess.HistAccess import HistAccess
+from AIForcast.access.HistAccess import HistAccess
 
-from RNN import RNN
+from AIForcast.RNN import RNN
 
 ########################################################################################
 # memo:
@@ -35,7 +34,7 @@ tkVarForFileLoop = []
 ################################################################
 ######################      load_data     ############################
 global data_path
-data_path='D:/Projects/Senior Design/AI-Forecast-master/'
+data_path= '//'
 
 #global train_path
 #train_path= "training.pkl"
@@ -603,7 +602,7 @@ class Window(Frame):
 
         def run_test(self):
 
-            model = load_model("D:/Projects/Senior Design/AI-Forecast-master/model-50.hdf5")
+            model = load_model("../data/models/model-50.hdf5")
             test = np.zeros((1, 1, 3))
 
             if self.current == True:
@@ -796,13 +795,13 @@ class Window(Frame):
         def addCityOption(self):
             USER_INP1 = simpledialog.askstring(title="Update",prompt="Please enter the City name you want to add to the list:")  #
 
-            f = open("AllCityName.txt", "a+")
+            f = open("../data/AllCityName.txt", "a+")
             f.write(USER_INP1 + ",")
             f.close()
             alert_popup("Receipt", "Your city has been added into the option!", "----------------------")
 
         def deleteCityOption(self):
-            open('AllCityName.txt', 'w').close()
+            open('../data/AllCityName.txt', 'w').close()
             cityOption.clear()
             alert_popup("Receipt", "The option panel is empty now!", "-----------------------")
 
@@ -813,7 +812,7 @@ class Window(Frame):
         #i = IntVar()
         #i = 0
 
-            with open("AllCityName.txt") as f:
+            with open("../data/AllCityName.txt") as f:
                 for item in f:
                     for i in item.split(","):
                         cityOption.append(i)

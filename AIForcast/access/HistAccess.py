@@ -1,9 +1,7 @@
 import json
 import pickle
 from datetime import datetime
-from DataAccess import WeatherData
-
-
+from AIForcast.access import WeatherData
 
 #class for pulling historical data from json file
 formatted_data = []
@@ -20,7 +18,7 @@ class HistAccess():
         for x in range(num_cities):
             temp_array = []
             city_array.append(temp_array)
-        with open('D:/Projects/Senior Design/AI-Forecast-master/Data.json') as f:
+        with open('/Data.json') as f:
             # this next line loads the entire file into data as an array of json objects. can access individual things like 2d array
             # and has 666604 json objects
             data = json.load(f)
