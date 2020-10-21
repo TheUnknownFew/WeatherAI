@@ -1,7 +1,7 @@
 import json
 import pickle
 from datetime import datetime
-from AIForcast.access import WeatherData
+from AIForecast.access import _WeatherData
 
 #class for pulling historical data from json file
 formatted_data = []
@@ -24,7 +24,7 @@ class HistAccess():
             data = json.load(f)
             length = len(data)
             while(count < length):
-                wd = WeatherData.WeatherData()
+                wd = _WeatherData.WeatherData()
                 temp_date = data[count]['dt']
                 temp_date = datetime.fromtimestamp(temp_date)
                 wd.year = temp_date.year

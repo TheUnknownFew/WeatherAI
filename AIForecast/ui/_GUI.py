@@ -6,11 +6,11 @@ from tkinter import messagebox
 import numpy as np
 
 from tensorflow.keras.models import load_model
-from AIForcast.access import APIAccess
+from AIForecast.access import _APIAccess
 ########    add   #################
-from AIForcast.access.HistAccess import HistAccess
+from AIForecast.access._HistAccess import HistAccess
 
-from AIForcast.RNN import RNN
+from AIForecast.RNN import _RNN
 
 ########################################################################################
 # memo:
@@ -97,10 +97,10 @@ class Window(Frame):
         # allowing the widget to take the full space of the root window
         self.pack(fill=BOTH, expand=1)
         # make canvas
-        canvas = Canvas(root, height=HEIGHT, width=WIDTH)
+        canvas = Canvas(height=HEIGHT, width=WIDTH)
         canvas.pack()
         # make frame
-        upperframe = Frame(root, bg='#525453')
+        upperframe = Frame(bg='#525453')
         upperframe.place(relx=0, rely=.05, relwidth=1, relheight=.95)
         # make label
         label = Label(upperframe, text="Training AI to Predict Temperature\n" + "by\n" + "Jason, Swatt, and Tiger", bg='#525453', fg='white', font=100)
@@ -108,7 +108,7 @@ class Window(Frame):
 
         # NavBar
         # nav frame
-        nav = Frame(root, bg='gray')
+        nav = Frame(bg='gray')
         nav.place(relx=0, rely=0, relwidth=1, relheight=.05)
         # nav buttons
         indexNav = Button(nav, text="Main", borderwidth=5, bg='white', fg='black', command=self.init_window)
@@ -144,10 +144,10 @@ class Window(Frame):
         # allowing the widget to take the full space of the root window
         self.pack(fill=BOTH, expand=1)
         # make canvas
-        canvas = Canvas(root, height=HEIGHT, width=WIDTH)
+        canvas = Canvas(height=HEIGHT, width=WIDTH)
         canvas.pack()
         # make frames
-        upperframe = Frame(root, bg='#525453')
+        upperframe = Frame(bg='#525453')
         upperframe.place(relx=0, rely=.05, relwidth=1, relheight=.95)
 
 
@@ -161,7 +161,7 @@ class Window(Frame):
         #output_label = Label(upperframe,text="                        ", bg='#525453', font=100)
         #output_label.place(relx=.5, rely=.2, relwidth=.2, relheight=.2)
 
-        cover_box = Frame(root, bg='#525453', highlightcolor='#525453')
+        cover_box = Frame(bg='#525453', highlightcolor='#525453')
         cover_box.place(relx=.35, rely=.1, relwidth=.6, relheight=.3)
         input_label = Label(upperframe, text="Choose surrounding cities from the list:", fg="white", bg='#525453',
                             font=100)
@@ -206,11 +206,11 @@ class Window(Frame):
         variable1 = StringVar(upperframe)
         variable2 = StringVar(upperframe)
         variable3 = StringVar(upperframe)
-        start_year = OptionMenu(root, variable1, "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009",
+        start_year = OptionMenu(variable1, "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009",
                                 "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "20019")
-        end_year = OptionMenu(root, variable2, "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009",
+        end_year = OptionMenu(variable2, "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009",
                               "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
-        future_time = OptionMenu(root, variable3, "2", "4", "8")
+        future_time = OptionMenu(variable3, "2", "4", "8")
         ####################################                  Functionality                ######################################################
         def historic_label(self):
             # input_source_selected = True
@@ -315,7 +315,7 @@ class Window(Frame):
             # a.getData(citySelected, int(start_year_parameter.get()), int(end_year_parameter.get()))
             if flag:
                 a.getData(num_cities, citySelected, int(start_year_parameter.get()), int(end_year_parameter.get()))
-                test = RNN.RNN
+                test = _RNN.RNN
                 out = test.runRNN(test, int(future_time_parameter.get()))
                 citySelected.clear()
                 output_label.delete("1.0", END)
@@ -408,10 +408,10 @@ class Window(Frame):
         # allowing the widget to take the full space of the root window
         self.pack(fill=BOTH, expand=1)
         # make canvas
-        canvas = Canvas(root, height=HEIGHT, width=WIDTH)
+        canvas = Canvas(height=HEIGHT, width=WIDTH)
         canvas.pack()
         # make frames
-        upperframe = Frame(root, bg='#525453')
+        upperframe = Frame(bg='#525453')
         upperframe.place(relx=0, rely=.05, relwidth=1, relheight=.95)
         # make labels
         # title = Label(upperframe, text="Test", bg='#525453', font=100)
@@ -422,7 +422,7 @@ class Window(Frame):
         input_label.place(relx=0, rely=.02, relwidth=.2, relheight=.1)
         str_out = StringVar()
 
-        cover_box = Frame(root, bg='#525453', highlightcolor='#525453')
+        cover_box = Frame(bg='#525453', highlightcolor='#525453')
         cover_box.place(relx=.35, rely=.1, relwidth=.6, relheight=.3)
 
         input_label = Label(upperframe, text="Choose surrounding cities from the list:", fg="white", bg='#525453',
@@ -602,11 +602,11 @@ class Window(Frame):
 
         def run_test(self):
 
-            model = load_model("../data/models/model-50.hdf5")
+            model = load_model("../../data/models/model-50.hdf5")
             test = np.zeros((1, 1, 3))
 
             if self.current == True:
-                api_access = APIAccess.APIAccess
+                api_access = _APIAccess.APIAccess
                 api_access.getCurrent(api_access)
                 test[0][0][0] = (api_access.temp_1 - 244) / (323 - 244)
                 test[0][0][1] = (api_access.temp_2 - 244) / (323 - 244)
@@ -652,10 +652,10 @@ class Window(Frame):
         # allowing the widget to take the full space of the root window
         self.pack(fill=BOTH, expand=1)
         # make canvas
-        canvas = Canvas(root, height=HEIGHT, width=WIDTH)
+        canvas = Canvas(height=HEIGHT, width=WIDTH)
         canvas.pack()
         # make frames
-        upperframe = Frame(root, bg='#525453')
+        upperframe = Frame(bg='#525453')
         upperframe.place(relx=0, rely=.05, relwidth=1, relheight=.95)
 
 
@@ -756,10 +756,10 @@ class Window(Frame):
         # allowing the widget to take the full space of the root window
         self.pack(fill=BOTH, expand=1)
         # make canvas
-        canvas = Canvas(root, height=HEIGHT, width=WIDTH)
+        canvas = Canvas(height=HEIGHT, width=WIDTH)
         canvas.pack()
         # make frames
-        upperframe = Frame(root, bg='#525453')
+        upperframe = Frame(bg='#525453')
         upperframe.place(relx=0, rely=.05, relwidth=1, relheight=.95)
 
         intro_label = Label(upperframe, text="Edit the surroundings city options testing and training using the options below:", fg="pink",bg='#525453', font=200)
@@ -795,13 +795,13 @@ class Window(Frame):
         def addCityOption(self):
             USER_INP1 = simpledialog.askstring(title="Update",prompt="Please enter the City name you want to add to the list:")  #
 
-            f = open("../data/AllCityName.txt", "a+")
+            f = open("../../data/AllCityName.txt", "a+")
             f.write(USER_INP1 + ",")
             f.close()
             alert_popup("Receipt", "Your city has been added into the option!", "----------------------")
 
         def deleteCityOption(self):
-            open('../data/AllCityName.txt', 'w').close()
+            open('../../data/AllCityName.txt', 'w').close()
             cityOption.clear()
             alert_popup("Receipt", "The option panel is empty now!", "-----------------------")
 
@@ -812,7 +812,7 @@ class Window(Frame):
         #i = IntVar()
         #i = 0
 
-            with open("../data/AllCityName.txt") as f:
+            with open("../../data/AllCityName.txt") as f:
                 for item in f:
                     for i in item.split(","):
                         cityOption.append(i)
@@ -838,9 +838,9 @@ class Window(Frame):
 ###########################################################################################
 
 ############################################################################
-root = Tk()
+#root = Tk()
 
-variable = StringVar()
-root.geometry("1000x600")
-app = Window(root)
-root.mainloop()
+#variable = StringVar()
+#root.geometry("1000x600")
+#app = Window(root)
+#root.mainloop()

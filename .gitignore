@@ -1,3 +1,4 @@
 .idea
 venv
 Data.json
+owm_apikey.txt

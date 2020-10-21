@@ -12,7 +12,6 @@ class APIAccess():
     # Chicago: 4887398
     # Erie: 5188843
 
-
     def getCurrent(self):
         key = 'aa91a3b5b86f47f610e04485584c5693'
         url = 'http://api.openweathermap.org/data/2.5/weather'

@@ -1,9 +1,10 @@
 from unittest import TestCase
-from DataAccess import APIAccess
+from AIForecast.access import _APIAccess
+
 
 class TestAPIAccess(TestCase):
     def setUp(self):
-        self.api_access = APIAccess.APIAccess
+        self.api_access = _APIAccess.APIAccess
 
     def test_getCurrent(self):
         self.api_access.getCurrent(self.api_access)

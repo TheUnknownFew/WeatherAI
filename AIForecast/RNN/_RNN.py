@@ -22,7 +22,7 @@ def load_data(data_path):
     return data_path + train_path, data_path + valid_path, data_path + test_path
 
 
-def countingPklSize(data_path):
+def counting_pkl_size(data_path):
     train_data, valid_data, test_data = load_data(data_path)
     train_path = train_data
     valid_path = valid_data
@@ -164,7 +164,7 @@ class RNN():
         offset = hours_ahead
         self.train_data, self.valid_data, self.test_data = load_data(data_path)
 
-        self.train_size, self.valid_size, self.test_size = countingPklSize(data_path)
+        self.train_size, self.valid_size, self.test_size = counting_pkl_size(data_path)
 
         self.train_Y, self.valid_Y, self.test_Y = getYData(self.train_data, self.valid_data, self.test_data, offset)
 
