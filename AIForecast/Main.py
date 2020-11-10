@@ -1,19 +1,24 @@
 # This is the main file
-# from tkinter import Tk, StringVar
-
 from AIForecast import utils as logger
-from AIForecast.utils import path_utils
-# from AIForecast.ui.GUI import Window
+import tkinter as tk
+
+from AIForecast.ui.widgets import AppWindow, Menus, MainMenu, TestMenu, TrainMenu
 
 
 def main():
     logger.log(__name__).debug('Starting AI-Weather Forecast!')
-    # root = Tk()
 
-    # variable = StringVar()
-    # root.geometry("1000x600")
-    # app = Window(root)
-    # root.mainloop()
+    root = tk.Tk()
+    root.title("AI-Weather Forecast")
+    root.minsize(AppWindow.WINDOW_WIDTH, AppWindow.WINDOW_HEIGHT)
+
+    app = AppWindow(root)
+    app.register_menu(MainMenu(app.frame), Menus.MAIN_MENU)
+    app.register_menu(TestMenu(app.frame), Menus.TEST_MENU)
+    app.register_menu(TrainMenu(app.frame), Menus.TRAIN_MENU)
+    app.display_screen(Menus.MAIN_MENU)
+
+    root.mainloop()
 
 
 if __name__ == '__main__':
