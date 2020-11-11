@@ -17,6 +17,9 @@ BUTTON_BACKGROUND = 'white'
 BUTTON_ACTIVE_BACKGROUND = 'gray'
 BUTTON_FOREGROUND = 'black'
 
+_ALIGN_X = 10
+_ALIGN_Y = 10
+
 
 class Menus(Enum):
     """
@@ -178,9 +181,6 @@ class MainMenu(Menu):
 
 class TestMenu(Menu):
 
-    _ALIGN_X = 10
-    _ALIGN_Y = 10
-
     def __init__(self, app_frame: tk.Frame):
         Menu.__init__(self, app_frame)
         self.input_frame = None                     # Type: tk.Frame
@@ -291,38 +291,38 @@ class TestMenu(Menu):
         Menu.draw(self)
         self.input_frame.place(relx=0, rely=0, relwidth=1, relheight=0.5)
         self.left_pane.place(relx=0, rely=0, relwidth=0.3, relheight=1)
-        self.source_select_label.place(x=self._ALIGN_X, y=self._ALIGN_Y)
+        self.source_select_label.place(x=_ALIGN_X, y=_ALIGN_Y)
         label_height = self.source_select_label.winfo_reqheight()
         radio_width = self.source_current_radio.winfo_reqwidth()
-        self.source_current_radio.place(x=self._ALIGN_X, y=self._ALIGN_Y + label_height)
-        self.source_manual_radio.place(x=self._ALIGN_X + radio_width + 5, y=self._ALIGN_Y + label_height)
-        self.source_desc_label.place(x=self._ALIGN_X, y=self._ALIGN_Y * 7)
-        self.enter_button.place(x=self._ALIGN_X + 5, y=self._ALIGN_Y * 11)
+        self.source_current_radio.place(x=_ALIGN_X, y=_ALIGN_Y + label_height)
+        self.source_manual_radio.place(x=_ALIGN_X + radio_width + 5, y=_ALIGN_Y + label_height)
+        self.source_desc_label.place(x=_ALIGN_X, y=_ALIGN_Y * 7)
+        self.enter_button.place(x=_ALIGN_X + 5, y=_ALIGN_Y * 11)
 
         # Todo: Replace selection lists with a textbox.
         # Content in the right pane will be replaced with a textbox in the future to work with pyowm instead of
         # being a selection list.
         self.right_pane.place(relx=0.3, rely=0, relwidth=0.7, relheight=1)
-        self.surrounding_cities_label.place(x=self._ALIGN_X, y=self._ALIGN_Y)
+        self.surrounding_cities_label.place(x=_ALIGN_X, y=_ALIGN_Y)
         city_label_width = self.surrounding_cities_label.winfo_reqwidth()
         self.surrounding_cities_listbox.place(
-            x=self._ALIGN_X + 5,
-            y=self._ALIGN_Y + label_height,
+            x=_ALIGN_X + 5,
+            y=_ALIGN_Y + label_height,
             width=city_label_width
         )
-        self.target_cities_label.place(x=city_label_width + 30, y=self._ALIGN_Y)
+        self.target_cities_label.place(x=city_label_width + 30, y=_ALIGN_Y)
         target_label_width = self.target_cities_label.winfo_reqwidth()
         self.target_cities_listbox.place(
             x=city_label_width + 35,
-            y=self._ALIGN_Y + label_height,
+            y=_ALIGN_Y + label_height,
             width=target_label_width
         )
         # Draw Input frame stuffs here:
 
         self.output_frame.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)
-        self.button_desc_label.place(x=self._ALIGN_X, y=self._ALIGN_Y)
-        self.run_button.place(x=self._ALIGN_X, y=self._ALIGN_Y + label_height + 5, width=80, height=40)
-        self.output_text.place(x=self._ALIGN_X, y=self._ALIGN_Y + label_height + 50, relwidth=0.5, relheight=0.5)
+        self.button_desc_label.place(x=_ALIGN_X, y=_ALIGN_Y)
+        self.run_button.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 5, width=80, height=40)
+        self.output_text.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 50, relwidth=0.5, relheight=0.5)
         # Draw Output frame stuffs here:
 
     def hide(self):
@@ -364,13 +364,25 @@ class TestMenu(Menu):
         self.target_cities_listbox.config(state='normal')
         self.enter_button.config(state='normal')
 
+    def on_select(self, event):
+        """
+        Todo: This may not be needed
+        """
+        pass
+
     def _populate_surrounding_cities(self):
+        """
+        This will be replaced by a more robust system.
+        Todo: Remove this all together and add auto city detection.
+        """
         pass
 
     def _populate_target_cities(self):
+        """
+        This will be replaced by a more robust system.
+        Todo: Create a textbox instead of a selection box for this
+        """
         pass
-
-
 
     def _enter_data(self):
         """
@@ -380,11 +392,79 @@ class TestMenu(Menu):
         pass
 
     def _run_test(self):
+        """
+        Todo: Implement the testing strategy.
+        """
         logger.log(self.__name__).debug("Loading Weather Model!")
 
 
 class TrainMenu(Menu):
-    pass
+
+    def __init__(self, app_frame: tk.Frame):
+        Menu.__init__(self, app_frame)
+        self.select_label = None
+        self.historic_radio = None
+        self.user_radio = None
+        self.radio_group = tk.IntVar()
+        self.run_training = None
+        self.output_text = None
+
+    def init_ui(self):
+        Menu.init_ui(self)
+        self.select_label = tk.Label(
+            self.body,
+            text="Choose Input Source:",
+            bg=BACKGROUND_COLOR,
+            fg=FOREGROUND_COLOR,
+            font=H1_FONT
+        )
+        self.historic_radio = tk.Radiobutton(
+            self.body,
+            text="Historic Data",
+            variable=self.radio_group,
+            value=1,
+            borderwidth=5,
+            bg=BACKGROUND_COLOR,
+            fg=FOREGROUND_COLOR,
+            selectcolor='gray',
+            command=lambda: print("test")
+        )
+        self.user_radio = tk.Radiobutton(
+            self.body,
+            text="User Data",
+            variable=self.radio_group,
+            value=2,
+            borderwidth=5,
+            bg=BACKGROUND_COLOR,
+            fg=FOREGROUND_COLOR,
+            selectcolor='gray',
+            command=lambda: print("test2")
+        )
+        self.run_training = tk.Button(
+            self.body,
+            text="Run",
+            borderwidth=BUTTON_BORDER_WIDTH,
+            command=lambda: print("test3")
+        )
+        self.output_text = tk.Text(self.body)
+
+    def draw(self):
+        Menu.draw(self)
+        self.select_label.place(x=_ALIGN_X, y=_ALIGN_Y)
+        label_height = self.select_label.winfo_reqheight()
+        radio_width = self.select_label.winfo_reqwidth()
+        self.historic_radio.place(x=_ALIGN_X, y=_ALIGN_Y + label_height)
+        self.user_radio.place(x=_ALIGN_X + radio_width + 5, y=_ALIGN_Y + label_height)
+        self.run_training.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 50)
+        self.output_text.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 80, relwidth=0.8, relheight=0.5)
+
+    def hide(self):
+        Menu.hide(self)
+        self.select_label.destroy()
+        self.historic_radio.destroy()
+        self.user_radio.destroy()
+        self.run_training.destroy()
+        self.output_text.destroy()
 
 
 class OptionsMenu(Menu):
