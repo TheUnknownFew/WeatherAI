@@ -1,7 +1,7 @@
 import json
 import pickle
 from datetime import datetime
-from AIForecast.access import _WeatherData
+from AIForecast.access import _HistoricData
 
 #class for pulling historical data from json file
 formatted_data = []
@@ -24,7 +24,7 @@ class HistAccess():
             data = json.load(f)
             length = len(data)
             while(count < length):
-                wd = _WeatherData.WeatherData()
+                wd = _HistoricData.WeatherData()
                 temp_date = data[count]['dt']
                 temp_date = datetime.fromtimestamp(temp_date)
                 wd.year = temp_date.year
@@ -34,13 +34,13 @@ class HistAccess():
                 if wd.year >= start_year and wd.year <= end_year: #if year is within specified range
                     #F: -20 = 244K
                     #F: 120 = 322K
-                    wd.temp = (data[count]['main']['temp'] - 244) / (323 - 244)
-                    wd.temp_min = (data[count]['main']['temp_min'] - 244) / (323 - 244)
-                    wd.temp_max = (data[count]['main']['temp_max'] - 244) / (323 - 244)
+                    wd.temperature = (data[count]['main']['temp'] - 244) / (323 - 244)
+                    wd.min_temperature = (data[count]['main']['temp_min'] - 244) / (323 - 244)
+                    wd.max_temperature = (data[count]['main']['temp_max'] - 244) / (323 - 244)
                     wd.pressure = (data[count]['main']['pressure'] - 900) / (1100-900) #avg is about 1013, doesn't seem to vary much
                     wd.humidity = data[count]['main']['humidity'] - 50 / (100 - 50)
                     wd.wind_speed = data[count]['wind']['speed'] / 50 #~50 mph (knots)
-                    wd.wind_dir = data[count]['wind']['deg'] / 360
+                    wd.wind_direction = data[count]['wind']['deg'] / 360
                     for x in range(num_cities):
                         if data[count]['city_name'] == city_names[x]:
                             city_array[x].append(wd)
@@ -63,13 +63,13 @@ class HistAccess():
                         temp.append(city_array[j][i].month)
                         temp.append(city_array[j][i].day)
                         temp.append(city_array[j][i].hour)
-                        temp.append(city_array[j][i].temp)
-                        temp.append(city_array[j][i].temp_min)
-                        temp.append(city_array[j][i].temp_max)
+                        temp.append(city_array[j][i].temperature)
+                        temp.append(city_array[j][i].min_temperature)
+                        temp.append(city_array[j][i].max_temperature)
                         temp.append(city_array[j][i].pressure)
                         temp.append(city_array[j][i].humidity)
                         temp.append(city_array[j][i].wind_speed)
-                        temp.append(city_array[j][i].wind_dir)
+                        temp.append(city_array[j][i].wind_direction)
                         out_array.append(temp)
                     pickle.dump(out_array, f_train, pickle.HIGHEST_PROTOCOL)
             f_train.close()
@@ -85,13 +85,13 @@ class HistAccess():
                         temp.append(city_array[j][i].month)
                         temp.append(city_array[j][i].day)
                         temp.append(city_array[j][i].hour)
-                        temp.append(city_array[j][i].temp)
-                        temp.append(city_array[j][i].temp_min)
-                        temp.append(city_array[j][i].temp_max)
+                        temp.append(city_array[j][i].temperature)
+                        temp.append(city_array[j][i].min_temperature)
+                        temp.append(city_array[j][i].max_temperature)
                         temp.append(city_array[j][i].pressure)
                         temp.append(city_array[j][i].humidity)
                         temp.append(city_array[j][i].wind_speed)
-                        temp.append(city_array[j][i].wind_dir)
+                        temp.append(city_array[j][i].wind_direction)
                         out_array.append(temp)
 
                     pickle.dump(out_array, f_validate, pickle.HIGHEST_PROTOCOL)
@@ -105,13 +105,13 @@ class HistAccess():
                         temp.append(city_array[j][i].month)
                         temp.append(city_array[j][i].day)
                         temp.append(city_array[j][i].hour)
-                        temp.append(city_array[j][i].temp)
-                        temp.append(city_array[j][i].temp_min)
-                        temp.append(city_array[j][i].temp_max)
+                        temp.append(city_array[j][i].temperature)
+                        temp.append(city_array[j][i].min_temperature)
+                        temp.append(city_array[j][i].max_temperature)
                         temp.append(city_array[j][i].pressure)
                         temp.append(city_array[j][i].humidity)
                         temp.append(city_array[j][i].wind_speed)
-                        temp.append(city_array[j][i].wind_dir)
+                        temp.append(city_array[j][i].wind_direction)
                         out_array.append(temp)
 
                     pickle.dump(out_array, f_test, pickle.HIGHEST_PROTOCOL)

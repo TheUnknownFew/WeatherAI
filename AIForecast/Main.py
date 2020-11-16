@@ -1,12 +1,15 @@
 # This is the main file
-from AIForecast import utils as logger
+from AIForecast import utils
 import tkinter as tk
 
+from AIForecast.access import WeatherAccess
 from AIForecast.ui.widgets import AppWindow, Menus, MainMenu, TestMenu, TrainMenu
 
 
 def main():
-    logger.log(__name__).debug('Starting AI-Weather Forecast!')
+    utils.log(__name__).debug('Starting AI-Weather Forecast!')
+
+    WeatherAccess.load_historical_data()
 
     root = tk.Tk()
     root.title("AI-Weather Forecast")
