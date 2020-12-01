@@ -633,7 +633,7 @@ class Window(Frame):
                 current_temp = self.entry_values[3]
 
 
-            prediction = model.predict(test)
+            prediction = model.train_network(test)
             str_out.set("Current Temp: " + str((current_temp - 273.15) * (
                         9 / 5) + 32) + "\nPredicted Temp " + future_time_parameter.get() + " hours from now: "
                         + str(((prediction[0][0] * (323.0 - 244.0) + 244.0) - 273.15) * (9.0 / 5.0) + 32.0))

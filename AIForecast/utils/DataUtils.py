@@ -35,3 +35,10 @@ def split_data(data: pd.DataFrame, train_split=.7, validate_split=.2, test_split
     total = len(data)
     train_split, train_validate_split = int(total * train_split), int(total * (train_split + validate_split))
     return data[:train_split], data[train_split:train_validate_split], data[train_validate_split:]
+
+
+def kelvin_to_fahrenheit(k: float):
+    """
+    Converts Kelvin to Fahrenheit
+    """
+    return (k - 273.15) * 9 / 5 + 32

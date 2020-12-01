@@ -217,7 +217,7 @@ class RNN():
             data, y = next(example_training_generator.generate())
             test = data[i]
             test = np.reshape(test, (1, num_steps, 3))
-            prediction = model.predict(test)
+            prediction = model.train_network(test)
             actual = ((y[i] * (323.0 - 244.0) + 244.0) - 273.15) * (9.0 / 5.0) + 32.0
             prediction = ((prediction * (323.0 - 244.0) + 244.0) - 273.15) * (9.0 / 5.0) + 32.0
             if (abs(actual - prediction) < 10):
@@ -244,7 +244,7 @@ class RNN():
             data, y = next(example_test_generator.generate())
             test = data[i]
             test = np.reshape(test, (1, num_steps, 3))
-            prediction = model.predict(test)
+            prediction = model.train_network(test)
             actual = ((y[i] * (323.0 - 244.0) + 244.0) - 273.15) * (9.0 / 5.0) + 32.0
             prediction = ((prediction * (323.0 - 244.0) + 244.0) - 273.15) * (9.0 / 5.0) + 32.0
             if (abs(actual - prediction) < 10):

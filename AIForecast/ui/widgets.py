@@ -1,13 +1,12 @@
+import time
 import tkinter as tk
 from enum import Enum
+from threading import Thread
 from typing import List, Dict
 
-import numpy
-from tensorflow.python.keras.models import load_model
-
 from AIForecast import utils
+from AIForecast.RNN.WeatherForecasting import ForecastingNetwork
 from AIForecast.access import WeatherAccess
-from AIForecast.utils import PathUtils
 
 BACKGROUND_COLOR = '#525453'
 """
@@ -249,6 +248,7 @@ class IOMenu(SplitWindowMenu):
         self.button_execute = tk.Button(self.bottom, text="Run", borderwidth=BUTTON_BORDER_WIDTH)
         self.button_execute.config(command=lambda: utils.log(__name__).debug("Function for button has not been set!"))
         self.output_window = tk.Text(self.bottom)
+        self.output("Waiting for input!")
 
     def draw(self):
         super().draw()
@@ -290,6 +290,11 @@ class IOMenu(SplitWindowMenu):
 
     def get_label_height(self):
         return self.surrounding_cities_label.winfo_reqheight()
+
+    def output(self, message: str):
+        self.output_window.delete("1.0", tk.END)
+        self.output_window.insert(tk.INSERT, message)
+        self.output_window.update()
 
     @property
     def selected_cities(self):
@@ -373,6 +378,7 @@ class TestMenu(IOMenu):
         )
         self.source_current_radio.select()
         self.source_current_radio.invoke()
+        self.button_execute.config(command=self._on_execute)
 
     def draw(self):
         super().draw()
@@ -411,10 +417,16 @@ class TestMenu(IOMenu):
         self.button_enter.config(state='normal')
 
     def _on_enter_data(self):
-        """
-        Todo: Implement
-        """
-        pass
+        self.output_window.config(text="This feature has not been implemented yet.")
+
+    def _on_execute(self):
+        import numpy as np
+        model, model_mean, model_std = ForecastingNetwork.get_saved_model()
+        current_weather = WeatherAccess.get_current_weather_at('Erie')
+        current_weather = ForecastingNetwork.scale(current_weather, model_mean, model_std)
+        prediction = model.predict(current_weather)
+        prediction = ForecastingNetwork.unscale(prediction, model_mean['temperature'], model_std['temperature'])
+        print(prediction)
 
 
 class TrainMenu(IOMenu):
@@ -474,15 +486,14 @@ class TrainMenu(IOMenu):
         self.end_year_select = tk.OptionMenu(self.body, self.end_year_var, *WeatherAccess.years)
         self.future_time_entry_label = tk.Label(
             self.left_pane,
-            text="Hours from now:",
+            text="Train to hours in future:",
             bg=BACKGROUND_COLOR,
             fg=FOREGROUND_COLOR
         )
         self.future_time_entry = tk.Entry(self.body)
         self.source_historic_radio.select()
         self.source_historic_radio.invoke()
-        self.start_year_var.set(WeatherAccess.get_years()[0])
-        self.end_year_var.set(WeatherAccess.get_years()[1])
+        self.button_execute.config(command=self._on_execute)
 
     def draw(self):
         super().draw()
@@ -517,342 +528,45 @@ class TrainMenu(IOMenu):
         self.future_time_entry.destroy()
 
     def _on_radio_historic(self):
-        print(self.get_selected_cities())
+        self.source_radio_label.config(text="This option uses historic data to train the model.")
+        self.button_execute.config(state="normal")
+        self.surrounding_cities_select.config(state="normal")
+        self.target_city_select.config(state="normal")
+        self.start_year_var.set(WeatherAccess.get_years()[0])
+        self.end_year_var.set(WeatherAccess.get_years()[1])
 
     def _on_radio_user(self):
-        pass
+        self.source_radio_label.config(text="this feature is currently unavailable.")
+        self.surrounding_cities_select.config(state='disabled')
+        self.target_city_select.config(state='disabled')
 
-# class TestMenu(Menu):
-#
-#     def __init__(self, app_frame: tk.Frame):
-#         Menu.__init__(self, app_frame)
-#         self.input_frame = None                     # Type: tk.Frame
-#         self.left_pane = None                       # Type: tk.Frame
-#         self.source_select_label = None             # Type: tk.Label
-#         self.source_current_radio = None            # Type: tk.Radiobutton
-#         self.source_manual_radio = None             # Type: tk.Radiobutton
-#         self.source_desc_label = None               # Type: tk.Label
-#         self.radio_group = tk.IntVar()
-#         self.right_pane = None                      # Type: tk.Frame
-#         self.surrounding_cities_label = None        # Type: tk.Label
-#         self.surrounding_cities_listbox = None      # Type: tk.Listbox
-#         self.target_cities_label = None             # Type: tk.Label
-#         self.target_cities_listbox = None           # Type: tk.Listbox
-#         self.enter_button = None                      # Type: tk.Button
-#         self.output_frame = None                    # Type: tk.Frame
-#         self.button_desc_label = None               # Type: tk.Label
-#         self.output_text = None                     # Type: tk.Text
-#         self.run_button = None                      # Type: tk.Button
-#
-#     def init_ui(self):
-#         Menu.init_ui(self)
-#         self.input_frame = tk.Frame(self.body, bg=BACKGROUND_COLOR)
-#
-#         # Add all of the input elements
-#         self.left_pane = tk.Frame(self.input_frame, bg=BACKGROUND_COLOR)
-#         self.source_select_label = tk.Label(
-#             self.left_pane,
-#             text="Choose Input Source:",
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             font=H1_FONT
-#         )
-#         self.source_current_radio = tk.Radiobutton(
-#             self.left_pane,
-#             text="Current",
-#             variable=self.radio_group,
-#             value=1,
-#             borderwidth=5,
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             selectcolor='gray',
-#             command=self._run_radio_1
-#         )
-#         self.source_manual_radio = tk.Radiobutton(
-#             self.left_pane,
-#             text="Manual",
-#             variable=self.radio_group,
-#             value=2,
-#             borderwidth=5,
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             selectcolor='gray',
-#             command=self._run_radio_2
-#         )
-#         self.source_desc_label = tk.Label(
-#             self.left_pane,
-#             text="temporary",
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR
-#         )
-#         self.enter_button = tk.Button(
-#             self.left_pane,
-#             text="Enter Data",
-#             bg=BUTTON_BACKGROUND,
-#             fg=BUTTON_FOREGROUND,
-#             command=self._enter_data  # Todo: add functionality for this button
-#         )
-#
-#         self.right_pane = tk.Frame(self.input_frame, bg=BACKGROUND_COLOR)
-#         self.surrounding_cities_label = tk.Label(
-#             self.right_pane,
-#             text="Choose surrounding cities from the list:",
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             font=H1_FONT
-#         )
-#         self.surrounding_cities_listbox = tk.Listbox(self.right_pane)
-#         self.target_cities_label = tk.Label(
-#             self.right_pane,
-#             text="Choose a target city from the list:",
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             font=H1_FONT
-#         )
-#         self.target_cities_listbox = tk.Listbox(self.right_pane)
-#
-#         self.output_frame = tk.Frame(self.body, bg=BACKGROUND_COLOR)
-#         self.button_desc_label = tk.Label(
-#             self.output_frame,
-#             text="Press the button below to generate a prediction:",
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             font=H1_FONT
-#         )
-#         self.run_button = tk.Button(
-#             self.output_frame,
-#             text="Run",
-#             borderwidth=BUTTON_BORDER_WIDTH,
-#             command=self._run_test
-#         )
-#         self.output_text = tk.Text(self.output_frame)
-#
-#         self.source_current_radio.select()
-#         self.source_current_radio.invoke()
-#
-#     def draw(self):
-#         Menu.draw(self)
-#         self.input_frame.place(relx=0, rely=0, relwidth=1, relheight=0.5)
-#         self.left_pane.place(relx=0, rely=0, relwidth=0.3, relheight=1)
-#         self.source_select_label.place(x=_ALIGN_X, y=_ALIGN_Y)
-#         label_height = self.source_select_label.winfo_reqheight()
-#         radio_width = self.source_current_radio.winfo_reqwidth()
-#         self.source_current_radio.place(x=_ALIGN_X, y=_ALIGN_Y + label_height)
-#         self.source_manual_radio.place(x=_ALIGN_X + radio_width + 5, y=_ALIGN_Y + label_height)
-#         self.source_desc_label.place(x=_ALIGN_X, y=_ALIGN_Y * 7)
-#         self.enter_button.place(x=_ALIGN_X + 5, y=_ALIGN_Y * 11)
-#
-#         # Todo: Replace selection lists with a textbox.
-#         # Content in the right pane will be replaced with a textbox in the future to work with pyowm instead of
-#         # being a selection list.
-#         self.right_pane.place(relx=0.3, rely=0, relwidth=0.7, relheight=1)
-#         self.surrounding_cities_label.place(x=_ALIGN_X, y=_ALIGN_Y)
-#         city_label_width = self.surrounding_cities_label.winfo_reqwidth()
-#         self.surrounding_cities_listbox.place(
-#             x=_ALIGN_X + 5,
-#             y=_ALIGN_Y + label_height,
-#             width=city_label_width
-#         )
-#         self.target_cities_label.place(x=city_label_width + 30, y=_ALIGN_Y)
-#         target_label_width = self.target_cities_label.winfo_reqwidth()
-#         self.target_cities_listbox.place(
-#             x=city_label_width + 35,
-#             y=_ALIGN_Y + label_height,
-#             width=target_label_width
-#         )
-#         # Draw Input frame stuffs here:
-#
-#         self.output_frame.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)
-#         self.button_desc_label.place(x=_ALIGN_X, y=_ALIGN_Y)
-#         self.run_button.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 5, width=80, height=40)
-#         self.output_text.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 50, relwidth=0.5, relheight=0.5)
-#         # Draw Output frame stuffs here:
-#
-#     def hide(self):
-#         Menu.hide(self)
-#         self.input_frame.destroy()
-#         self.left_pane.destroy()
-#         self.source_select_label.destroy()
-#         self.source_current_radio.destroy()
-#         self.source_manual_radio.destroy()
-#         self.source_desc_label.destroy()
-#         self.right_pane.destroy()
-#         self.surrounding_cities_label.destroy()
-#         self.surrounding_cities_listbox.destroy()
-#         self.target_cities_label.destroy()
-#         self.target_cities_listbox.destroy()
-#         self.enter_button.destroy()
-#         self.output_frame.destroy()
-#         self.button_desc_label.destroy()
-#         self.output_text.destroy()
-#         self.run_button.destroy()
-#
-#     def _run_radio_1(self):
-#         """
-#         run_radio_1 is the command routine for source_current_radio.
-#         """
-#         self.source_desc_label.config(text="Use current data to make a prediction.")
-#         self.run_button.config(state='normal')
-#         self.surrounding_cities_listbox.config(state='disabled')
-#         self.target_cities_listbox.config(state='disabled')
-#         self.enter_button.config(state='disabled')
-#
-#     def _run_radio_2(self):
-#         """
-#         run_radio_2 is the command routine for source_manual_radio.
-#         """
-#         self.source_desc_label.config(text="Manually input data to make a prediction.")
-#         self.run_button.config(state='normal')
-#         self.surrounding_cities_listbox.config(state='normal')
-#         self.target_cities_listbox.config(state='normal')
-#         self.enter_button.config(state='normal')
-#
-#     def on_select(self, event):
-#         """
-#         Todo: This may not be needed
-#         """
-#         pass
-#
-#     def _populate_surrounding_cities(self):
-#         """
-#         This will be replaced by a more robust system.
-#         Todo: Remove this all together and add auto city detection.
-#         """
-#         pass
-#
-#     def _populate_target_cities(self):
-#         """
-#         This will be replaced by a more robust system.
-#         Todo: Create a textbox instead of a selection box for this
-#         """
-#         pass
-#
-#     def _enter_data(self):
-#         """
-#         This function was not implemented yet.
-#         Todo: Implement this? Is this necessary?
-#         """
-#         pass
-#
-#     def _run_test(self):
-#         """
-#         Todo: Implement the testing strategy.
-#         """
-#         utils.log(__name__).debug("Loading Weather Model!")
-#         weather_model = load_model(PathUtils.get_file(PathUtils.get_model_path(), "model-50.hdf5"))
-#         test_data = numpy.zeros((1, 1, 3))
-#
-#         if self.radio_group.get() == 1:  # Running model from current data
-#             print("Hello world")
-#         else:   # Running model from user input data
-#             print("Hello world 2")
-#
-#         weather_model.predict(test_data)
+    def _on_execute(self):
+        self.output("Please wait while the network trains!")
+        data = WeatherAccess.query_historical_data(self.selected_cities, self.start_year, self.end_year)
+        rnn = ForecastingNetwork(data)
+        rnn.train_network(self.hours)
+        print(rnn.get_example_predictions())
+        self.output(
+            """The network has finished training!
+            You may now go to the Test menu to make predictions.
+            --------
+            Start Year: """ + str(self.start_year) + """
+            End Year: """ + str(self.end_year) + """
+            Hours into the Future: """ + str(self.hours) + """
+            Example prediction for """ + self.target_city_var.get()
+        )
 
+    @property
+    def start_year(self):
+        return self.start_year_var.get()
 
-# class TrainMenu(Menu):
-#
-#     def __init__(self, app_frame: tk.Frame):
-#         Menu.__init__(self, app_frame)
-#         self.target_city_var = tk.StringVar()
-#         self.radio_group = tk.IntVar()
-#         self.start_year_var = tk.IntVar()
-#         self.end_year_var = tk.IntVar()
-#         self.select_label = None
-#         self.historic_radio = None
-#         self.user_radio = None
-#         self.start_training = None
-#         self.output_text = None
-#         self.start_year_select = None
-#         self.end_year_select = None
-#         self.future_time_entry = None
-#         self.surrounding_cities_select = None
-#         self.target_city_select = None
-#
-#     def init_ui(self):
-#         Menu.init_ui(self)
-#         self.select_label = tk.Label(
-#             self.body,
-#             text="Choose Input Source:",
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             font=H1_FONT
-#         )
-#         self.historic_radio = tk.Radiobutton(
-#             self.body,
-#             text="Historic Data",
-#             variable=self.radio_group,
-#             value=1,
-#             borderwidth=5,
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             selectcolor='gray',
-#             command=lambda: print("test")
-#         )
-#         self.user_radio = tk.Radiobutton(
-#             self.body,
-#             text="User Data",
-#             variable=self.radio_group,
-#             value=2,
-#             borderwidth=5,
-#             bg=BACKGROUND_COLOR,
-#             fg=FOREGROUND_COLOR,
-#             selectcolor='gray',
-#             command=lambda: print("test2")
-#         )
-#         self.start_training = tk.Button(
-#             self.body,
-#             text="Run",
-#             borderwidth=BUTTON_BORDER_WIDTH,
-#             command=self._run_train
-#         )
-#         self.output_text = tk.Text(self.body)
-#         self.start_year_select = tk.OptionMenu(self.body, self.start_year_var, *WeatherAccess.years)
-#         self.end_year_select = tk.OptionMenu(self.body, self.end_year_var, *WeatherAccess.years)
-#         self.future_time_entry = tk.Entry(self.body)
-#         self.surrounding_cities_select = tk.Listbox(self.body)
-#         self._populate_surrounding_cities_listbox()
-#         self.target_city_select = tk.OptionMenu(self.body, self.target_city_select, *WeatherAccess.cities)
-#
-#     def draw(self):
-#         Menu.draw(self)
-#         self.select_label.place(x=_ALIGN_X, y=_ALIGN_Y)
-#         label_height = self.select_label.winfo_reqheight()
-#         radio_width = self.select_label.winfo_reqwidth()
-#         self.historic_radio.place(x=_ALIGN_X, y=_ALIGN_Y + label_height)
-#         self.user_radio.place(x=_ALIGN_X + radio_width + 5, y=_ALIGN_Y + label_height)
-#         self.start_training.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 50)
-#         self.output_text.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 80, relwidth=0.8, relheight=0.5)
-#
-#         self.start_year_select.pack()
-#         self.end_year_select.pack()
-#         self.future_time_entry.pack()
-#         self.surrounding_cities_select.pack()
-#         self.target_city_select.pack()
-#
-#     def hide(self):
-#         Menu.hide(self)
-#         self.select_label.destroy()
-#         self.historic_radio.destroy()
-#         self.user_radio.destroy()
-#         self.start_training.destroy()
-#         self.output_text.destroy()
-#         self.start_year_select.destroy()
-#         self.end_year_select.destroy()
-#         self.future_time_entry.destroy()
-#         self.surrounding_cities_select.destroy()
-#         self.target_city_select.destroy()
-#
-#     def _populate_surrounding_cities_listbox(self):
-#         for city in WeatherAccess.cities:
-#             self.surrounding_cities_select.insert(tk.END, city)
-#
-#     def _run_train(self):
-#         pass
+    @property
+    def end_year(self):
+        return self.end_year_var.get()
 
-
-class OptionsMenu(Menu):
-    pass
+    @property
+    def hours(self):
+        return self.future_time_entry.get()
 
 
 class AppWindow:
