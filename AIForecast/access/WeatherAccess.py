@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Set
+from typing import List, Set, Dict
 
 import pandas as pd
 from pyowm.weatherapi25.weather import Weather
@@ -12,13 +12,13 @@ DEG_C = 'celsius'
 DEG_K = 'kelvin'
 
 csv_columns = [
-    'timestamp', 'city_name', 'temperature',
+    'timestamp', 'city_name', 'city_id', 'temperature',
     'temperature_min', 'temperature_max', 'pressure',
     'humidity', 'wind_velocity_x', 'wind_velocity_y',
     'day_x', 'day_y', 'year_x', 'year_y'
 ]
 historic_data: pd.DataFrame = None
-cities: Set[str] = None
+cities: Dict = None
 years: Set[int] = None
 
 
@@ -27,7 +27,7 @@ def get_years():
 
 
 def get_cities():
-    return list(cities)
+    return cities
 
 
 def load_historical_data() -> None:
@@ -41,7 +41,7 @@ def load_historical_data() -> None:
         utils.log(__name__).debug("Loading historic data from CSV.")
         historic_data = pd.read_csv(csv_path)
     else:
-        utils.log(__name__).debug("No Data.cvs found! Loading and converting Data.json to Data.csv.")
+        utils.log(__name__).debug("No Data.csv found! Loading and converting Data.json to Data.csv.")
         import ijson
         json_matrix = []
         with open(PathUtils.get_file(PathUtils.get_data_path(), "Data.json")) as f:
@@ -51,6 +51,7 @@ def load_historical_data() -> None:
                 json_matrix.append([
                     datetime.fromtimestamp(item['dt']).isoformat(),
                     item['city_name'],
+                    item['city_id'],
                     item['main']['temp'],
                     item['main']['temp_min'],
                     item['main']['temp_max'],
@@ -63,15 +64,12 @@ def load_historical_data() -> None:
         historic_data = pd.DataFrame(json_matrix, columns=csv_columns)
         utils.log(__name__).debug("Saving data to CSV.")
         historic_data.to_csv(csv_path)
-    cities = {city for city in historic_data['city_name']}
+    cities = {city: city_id for city, city_id in zip(historic_data['city_name'], historic_data['city_id'])}
     years = {datetime.fromisoformat(timestamp).year for timestamp in historic_data['timestamp']}
     utils.log(__name__).debug("Finished loading historic weather data.")
 
 
 def query_historical_data(training_cities: List[str], start_year, end_year) -> pd.DataFrame:
-    """
-
-    """
     if historic_data is None:
         raise ValueError
 
@@ -82,10 +80,10 @@ def query_historical_data(training_cities: List[str], start_year, end_year) -> p
     # Filter the historical matching the passed parameter criteria.
     return historic_data.loc[((historic_data['timestamp'] >= datetime(int(start_year), 1, 1).isoformat())
                              & (historic_data['timestamp'] < datetime(int(end_year), 1, 1).isoformat()))
-                             & historic_data['city_name'].isin(training_cities)][csv_columns[2:]]
+                             & historic_data['city_name'].isin(training_cities)][csv_columns[3:]]
 
 
-def get_current_weather_at(city: str = '', city_state: str = 'PA') -> pd.DataFrame:
+def get_current_weather_at(city_id) -> pd.DataFrame:
     """
     The city parameters refers to the city name.
     The city_state parameter refers to the state or country that city is located in.
@@ -93,28 +91,19 @@ def get_current_weather_at(city: str = '', city_state: str = 'PA') -> pd.DataFra
     Raises ValueError if city could not be found.
     Raises IndexError if more than one city has been returned.
     """
-    weather_loc = owm.city_id_registry().locations_for(city_name=city, country=city_state)
-    if len(weather_loc) < 1:
-        raise IndexError
-    weather: Weather = owm.weather_manager().weather_at_id(weather_loc[0].id).weather
+    weather: Weather = owm.weather_manager().weather_at_id(city_id).weather
     temp_dict = weather.temperature()
     wind_dict = weather.wind()
     wind_x, wind_y = DataUtils.vector_2d(wind_dict['speed'], wind_dict['deg'])
     day_x, day_y, year_x, year_y = DataUtils.periodicity(int(datetime.now().timestamp()))
-    current_weather = [
+    current_weather = [[
         temp_dict['temp'],
         temp_dict['temp_min'],
         temp_dict['temp_max'],
-        weather.pressure,
+        weather.pressure['press'],
         weather.humidity,
         wind_x, wind_y,
         day_x, day_y,
         year_x, year_y
-    ]
-    return pd.DataFrame(current_weather, index=csv_columns[2:])
-
-
-if __name__ == '__main__':
-    print(datetime.now().timestamp())
-    # load_historical_data()
-    # query_historical_data(['Pittsburgh', 'Buffalo'], 2018, 2019)
+    ]]
+    return pd.DataFrame(current_weather, columns=csv_columns[3:])

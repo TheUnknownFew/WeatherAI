@@ -109,7 +109,7 @@ class ForecastingNetwork:
     The number of times the neural network is fed back.
     """
 
-    def __init__(self, data, use_dropout=True, batch_size=32):
+    def __init__(self, data, batch_size=32):
         self.train, self.validate, self.test = DataUtils.split_data(data)
         self.train_mean, self.train_std = self.train.mean(), self.train.std()
         self.train = self.scale(self.train, self.train_mean, self.train_std)

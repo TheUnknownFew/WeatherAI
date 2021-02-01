@@ -7,6 +7,7 @@ from typing import List, Dict
 from AIForecast import utils
 from AIForecast.RNN.WeatherForecasting import ForecastingNetwork
 from AIForecast.access import WeatherAccess
+from AIForecast.utils import DataUtils
 
 BACKGROUND_COLOR = '#525453'
 """
@@ -240,7 +241,7 @@ class IOMenu(SplitWindowMenu):
             font=H1_FONT
         )
         self.target_city_select = tk.OptionMenu(self.right_pane, self.target_city_var, *WeatherAccess.cities)
-        self.target_city_var.set(WeatherAccess.get_cities()[0])
+        self.target_city_var.set(next(iter(WeatherAccess.get_cities())))
 
     def _init_output_frame(self):
         self.output_label = tk.Label(self.bottom, text=self.output_label_text, bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR)
@@ -270,7 +271,7 @@ class IOMenu(SplitWindowMenu):
         self.output_label.place(x=_ALIGN_X, y=_ALIGN_Y)
         label_height = self.output_label.winfo_reqheight()
         self.button_execute.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 5, width=80, height=40)
-        self.output_window.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 50, relwidth=0.5, relheight=0.5)
+        self.output_window.place(x=_ALIGN_X, y=_ALIGN_Y + label_height + 50, relwidth=0.6, relheight=0.5)
 
     def hide(self):
         super().hide()
@@ -403,7 +404,6 @@ class TestMenu(IOMenu):
         self.source_radio_label.config(text="Use current data to make a prediction.")
         self.button_execute.config(state='normal')
         self.surrounding_cities_select.config(state='disabled')
-        self.target_city_select.config(state='disabled')
         self.button_enter.config(state='disabled')
 
     def _on_radio_manual(self):
@@ -411,10 +411,9 @@ class TestMenu(IOMenu):
         run_radio_2 is the command routine for source_manual_radio.
         """
         self.source_radio_label.config(text="Manually input data to make a prediction.")
-        self.button_execute.config(state='normal')
-        self.surrounding_cities_select.config(state='normal')
-        self.target_city_select.config(state='normal')
-        self.button_enter.config(state='normal')
+        self.button_execute.config(state='disabled')
+        self.surrounding_cities_select.config(state='disabled')
+        self.button_enter.config(state='disabled')
 
     def _on_enter_data(self):
         self.output_window.config(text="This feature has not been implemented yet.")
@@ -422,11 +421,22 @@ class TestMenu(IOMenu):
     def _on_execute(self):
         import numpy as np
         model, model_mean, model_std = ForecastingNetwork.get_saved_model()
-        current_weather = WeatherAccess.get_current_weather_at('Erie')
+        current_weather = WeatherAccess.get_current_weather_at(WeatherAccess.get_cities()[self.target_city_var.get()])
         current_weather = ForecastingNetwork.scale(current_weather, model_mean, model_std)
-        prediction = model.predict(current_weather)
+        prediction = model.predict(np.array([current_weather]))[0][0][0]
         prediction = ForecastingNetwork.unscale(prediction, model_mean['temperature'], model_std['temperature'])
-        print(prediction)
+        self.output(
+"""A trained model has been loaded.
+--------
+Based on the parameters used to train the saved model,
+the following is a prediction for the future temperature
+for """ + self.target_city_var.get() + """. The amount of hours 
+into the future is equivalent to that in which the model has been
+trained to.
+
+""" + self.target_city_var.get() + ": "
++ "%.2f" % DataUtils.kelvin_to_fahrenheit(prediction) + "F"
+        )
 
 
 class TrainMenu(IOMenu):
@@ -545,15 +555,17 @@ class TrainMenu(IOMenu):
         data = WeatherAccess.query_historical_data(self.selected_cities, self.start_year, self.end_year)
         rnn = ForecastingNetwork(data)
         rnn.train_network(self.hours)
-        print(rnn.get_example_predictions())
         self.output(
-            """The network has finished training!
-            You may now go to the Test menu to make predictions.
-            --------
-            Start Year: """ + str(self.start_year) + """
-            End Year: """ + str(self.end_year) + """
-            Hours into the Future: """ + str(self.hours) + """
-            Example prediction for """ + self.target_city_var.get()
+"""The network has finished training!
+You may now go to the Test menu to make predictions.
+
+The model has been trained to the following variables:
+--------
+Start Year: """ + str(self.start_year) + """
+End Year: """ + str(self.end_year) + """
+Hours into the Future: """ + str(self.hours) + """
+Example prediction for """ + self.target_city_var.get() + ": "
++ "%.2f" % DataUtils.kelvin_to_fahrenheit(rnn.get_example_predictions()[0]) + "F"
         )
 
     @property
