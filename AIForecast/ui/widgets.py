@@ -570,10 +570,10 @@ class TrainMenu(IOMenu):
         )
         self.normalization_selector_label = tk.Label(self.input_frame, text="Normalization Type:",
                                                      bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR, anchor="e")
-        self.training_features = tk.Listbox(self.input_frame)
+        self.training_features = tk.Listbox(self.input_frame, exportselection=0)
         self.training_features_label = tk.Label(self.input_frame, text="Training Features:", bg=BACKGROUND_COLOR,
                                                 fg=FOREGROUND_COLOR, anchor="e")
-        self.output_features = tk.Listbox(self.input_frame)
+        self.output_features = tk.Listbox(self.input_frame, exportselection=0)
         self.output_features_label = tk.Label(self.input_frame, text="Output Features:", bg=BACKGROUND_COLOR,
                                               fg=FOREGROUND_COLOR, anchor="e")
         self.input_width = tk.Text(self.input_frame)
