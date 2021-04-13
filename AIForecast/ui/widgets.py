@@ -1,13 +1,11 @@
-import time
 import tkinter as tk
 from enum import Enum
-from threading import Thread
 from typing import List, Dict
 
-from AIForecast import utils
-from AIForecast.RNN.WeatherForecasting import ForecastingNetwork
-from AIForecast.access import WeatherAccess
-from AIForecast.utils import DataUtils
+from AIForecast import sysutils
+from AIForecast.weather.forecasting import ForecastingNetwork
+from AIForecast.weather import dataaccess
+from AIForecast.sysutils import datautils
 
 BACKGROUND_COLOR = '#525453'
 """
@@ -206,7 +204,7 @@ class IOMenu(SplitWindowMenu):
         self.output_window: tk.Text = None
 
     def _populate_surrounding_cities_listbox(self):
-        for city in WeatherAccess.cities:
+        for city in dataaccess.cities:
             self.surrounding_cities_select.insert(tk.END, city)
 
     def init_ui(self):
@@ -240,14 +238,14 @@ class IOMenu(SplitWindowMenu):
             fg=FOREGROUND_COLOR,
             font=H1_FONT
         )
-        self.target_city_select = tk.OptionMenu(self.right_pane, self.target_city_var, *WeatherAccess.cities)
-        self.target_city_var.set(next(iter(WeatherAccess.get_cities())))
+        self.target_city_select = tk.OptionMenu(self.right_pane, self.target_city_var, *dataaccess.cities)
+        self.target_city_var.set(next(iter(dataaccess.get_cities())))
 
     def _init_output_frame(self):
         self.output_label = tk.Label(self.bottom, text=self.output_label_text, bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR)
         self.output_label.config(font=H1_FONT)
         self.button_execute = tk.Button(self.bottom, text="Run", borderwidth=BUTTON_BORDER_WIDTH)
-        self.button_execute.config(command=lambda: utils.log(__name__).debug("Function for button has not been set!"))
+        self.button_execute.config(command=lambda: sysutils.log(__name__).debug("Function for button has not been set!"))
         self.output_window = tk.Text(self.bottom)
         self.output("Waiting for input!")
 
@@ -421,7 +419,7 @@ class TestMenu(IOMenu):
     def _on_execute(self):
         import numpy as np
         model, model_mean, model_std = ForecastingNetwork.get_saved_model()
-        current_weather = WeatherAccess.get_current_weather_at(WeatherAccess.get_cities()[self.target_city_var.get()])
+        current_weather = dataaccess.get_current_weather_at(dataaccess.get_cities()[self.target_city_var.get()])
         current_weather = ForecastingNetwork.scale(current_weather, model_mean, model_std)
         prediction = model.predict(np.array([current_weather]))[0][0][0]
         prediction = ForecastingNetwork.unscale(prediction, model_mean['temperature'], model_std['temperature'])
@@ -435,7 +433,7 @@ into the future is equivalent to that in which the model has been
 trained to.
 
 """ + self.target_city_var.get() + ": "
-+ "%.2f" % DataUtils.kelvin_to_fahrenheit(prediction) + "F"
++ "%.2f" % datautils.kelvin_to_fahrenheit(prediction) + "F"
         )
 
 
@@ -486,14 +484,14 @@ class TrainMenu(IOMenu):
             bg=BACKGROUND_COLOR,
             fg=FOREGROUND_COLOR
         )
-        self.start_year_select = tk.OptionMenu(self.body, self.start_year_var, *WeatherAccess.years)
+        self.start_year_select = tk.OptionMenu(self.body, self.start_year_var, *dataaccess.years)
         self.end_year_label = tk.Label(
             self.left_pane,
             text="Select an ending year:",
             bg=BACKGROUND_COLOR,
             fg=FOREGROUND_COLOR
         )
-        self.end_year_select = tk.OptionMenu(self.body, self.end_year_var, *WeatherAccess.years)
+        self.end_year_select = tk.OptionMenu(self.body, self.end_year_var, *dataaccess.years)
         self.future_time_entry_label = tk.Label(
             self.left_pane,
             text="Train to hours in future:",
@@ -542,8 +540,8 @@ class TrainMenu(IOMenu):
         self.button_execute.config(state="normal")
         self.surrounding_cities_select.config(state="normal")
         self.target_city_select.config(state="normal")
-        self.start_year_var.set(WeatherAccess.get_years()[0])
-        self.end_year_var.set(WeatherAccess.get_years()[1])
+        self.start_year_var.set(dataaccess.get_years()[0])
+        self.end_year_var.set(dataaccess.get_years()[1])
 
     def _on_radio_user(self):
         self.source_radio_label.config(text="this feature is currently unavailable.")
@@ -552,7 +550,7 @@ class TrainMenu(IOMenu):
 
     def _on_execute(self):
         self.output("Please wait while the network trains!")
-        data = WeatherAccess.query_historical_data(self.selected_cities, self.start_year, self.end_year)
+        data = dataaccess.query_historical_data(self.selected_cities, self.start_year, self.end_year)
         rnn = ForecastingNetwork(data)
         rnn.train_network(self.hours)
         self.output(
@@ -565,7 +563,7 @@ Start Year: """ + str(self.start_year) + """
 End Year: """ + str(self.end_year) + """
 Hours into the Future: """ + str(self.hours) + """
 Example prediction for """ + self.target_city_var.get() + ": "
-+ "%.2f" % DataUtils.kelvin_to_fahrenheit(rnn.get_example_predictions()[0]) + "F"
++ "%.2f" % datautils.kelvin_to_fahrenheit(rnn.get_example_predictions()[0]) + "F"
         )
 
     @property
@@ -618,7 +616,7 @@ class AppWindow:
 
     @staticmethod
     def display_screen(screen: Menus):
-        utils.log(__name__).debug("Opening " + str(screen) + "!")
+        sysutils.log(__name__).debug("Opening " + str(screen) + "!")
         if AppWindow.current_menu is not None:
             AppWindow.current_menu.hide()
         AppWindow.current_menu = AppWindow.menu_list[screen]
