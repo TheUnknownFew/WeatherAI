@@ -5,5 +5,5 @@ AIClimateChange/data/weather/historical_weather.csv
 Data.cvs
 AIClimateChange/owm_apikey.txt
 
-
 research/data
+*.pyc
