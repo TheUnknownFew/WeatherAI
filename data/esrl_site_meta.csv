@@ -1,0 +1,378 @@
+,Code,Name,Country,Latitude,Longitude,Elevation (meters),Time from GMT,Project
+0,AAO*,"Airborne Aerosol Observatory, Bondville, Illinois",United States,40.050,-88.370,230.0,-6 hours,"» Airborne Flasks*
+» Ozone Airborne*"
+1,ABP*,"Arembepe, Bahia",Brazil,-12.770,-38.170,1.0,-3 hours,» Surface Flasks*
+2,ABQ,"Albuquerque, New Mexico",United States,35.038,-106.622,1617.0,-7 hours,» Solar Radiation
+3,ACG,Alaska Coast Guard,United States,57.737,-152.504,6.0,-8 hours,» Airborne Flasks
+4,ALT,"Alert, Nunavut",Canada,82.451,-62.507,185.0,-4 hours,"» Surface Flasks
+» HATS Flask Sampling
+» Aerosol Mobile and Cooperative Platforms"
+5,AMS*,Amsterdam Island,France,-37.798,77.538,55.0,+5 hours,» Surface Flasks*
+6,AMT,"Argyle, Maine",United States,45.035,-68.682,53.0,-5 hours,"» Surface Flasks
+» In Situ Tall Tower"
+7,AMY,Anmyeon-do,Republic of Korea,36.539,126.329,47.0,+9 hours,"» Surface Flasks
+» Aerosol Mobile and Cooperative Platforms"
+8,APP,Appalachian State,United States,36.200,-81.700,1100.0,-5 hours,» Aerosol Mobile and Cooperative Platforms
+9,ARH,"Arrival Heights, Antarctica",New Zealand,-77.833,166.200,184.0,-11 hours,» Surface Ozone
+10,ARN,El Arenosillo,Spain,37.100,-6.733,41.0,-1 hours,» Aerosol Mobile and Cooperative Platforms
+11,ASC,Ascension Island,United Kingdom,-7.967,-14.400,85.0,-1 hours,» Surface Flasks
+12,ASK,Assekrem,Algeria,23.262,5.632,2710.0,+1 hours,» Surface Flasks
+13,AVI*,"St. Croix, Virgin Islands",United States,17.750,-64.750,3.0,-4 hours,» Surface Flasks*
+14,AZR,"Terceira Island, Azores",Portugal,38.766,-27.375,19.0,-1 hours,» Surface Flasks
+15,BAL*,Baltic Sea,Poland,55.350,17.220,3.0,+1 hours,» Surface Flasks*
+16,BAO*,"Boulder Atmospheric Observatory, Colorado",United States,40.050,-105.004,1584.0,-7 hours,"» Surface Flasks*
+» Airborne Flasks*
+» In Situ Tall Tower*
+» Baseline Surface Radiation Network*
+» Surface Ozone*"
+17,BEO,Beo-Moussala,Bulgaria,42.179,23.586,2925.0,+3 hours,» Aerosol Mobile and Cooperative Platforms
+18,BER,"Prospect Hill, Bermuda",United Kingdom,32.301,-64.766,60.0,-4 hours,» Baseline Surface Radiation Network
+19,BGI*,"Bradgate, Iowa",United States,42.820,-94.410,355.1,-6 hours,"» Airborne Flasks*
+» Ozone Airborne*"
+20,BHD,Baring Head Station,New Zealand,-41.408,174.871,85.0,+12 hours,» Surface Flasks
+21,BIS,"Bismarck, North Dakota",United States,46.772,-100.760,511.0,-6 hours,"» Dobson Total Ozone
+» Solar Radiation"
+22,BKT,Bukit Kototabang,Indonesia,-0.202,100.318,845.0,+7 hours,» Surface Flasks
+23,BLD,"Boulder, Colorado",United States,39.991,-105.261,1628.0,-7 hours,"» Dobson Total Ozone
+» Lidar
+» Meteorology*
+» Dobson Umkehr Ozone
+» Spectral UV Irradiance"
+24,BME*,"St. Davids Head, Bermuda",United Kingdom,32.368,-64.648,12.0,-4 hours,» Surface Flasks*
+25,BMW,"Tudor Hill, Bermuda",United Kingdom,32.265,-64.879,30.0,-4 hours,"» Surface Flasks
+» Baseline Surface Radiation Network*
+» Surface Ozone"
+26,BNA,"Nashville, Tennessee",United States,36.247,-86.562,182.0,-6 hours,» Dobson Total Ozone
+27,BND,"Bondville, Illinois",United States,40.052,-88.373,230.0,-6 hours,"» Aerosol Surface In-Situ
+» Surface Radiation Budget Monitoring
+» Meteorology
+» Spectral UV Irradiance"
+28,BNE*,"Beaver Crossing, Nebraska",United States,40.800,-97.180,465.9,-6 hours,"» Airborne Flasks*
+» Ozone Airborne*"
+29,BOS,Table Mountain,United States,40.125,-105.237,1689.0,-7 hours,» Surface Ozone
+30,BRW,Barrow Atmospheric Baseline Observatory,United States,71.323,-156.611,11.0,-9 hours,"» Surface Flasks
+» In Situ Observatory
+» HATS Flask Sampling
+» HATS In Situ Observatory
+» Aerosol Surface In-Situ
+» Radiation In-Situ Observatory
+» Surface Ozone
+» Dobson Total Ozone
+» Meteorology"
+31,BSC*,"Black Sea, Constanta",Romania,44.178,28.665,0.0,+2 hours,» Surface Flasks*
+32,BWD,"Brentwood, Maryland",United States,38.934,-76.956,16.8,-5 hours,» Surface Flasks
+33,CAR,"Briggsdale, Colorado",United States,40.635,-104.327,1488.0,-7 hours,"» Airborne Flasks
+» Ozone Airborne*"
+34,CBA,"Cold Bay, Alaska",United States,55.210,-162.720,21.3,-9 hours,» Surface Flasks
+35,CBM,"Caribou, Maine",United States,46.868,-68.013,191.0,-5 hours,» Dobson Total Ozone
+36,CGO,"Cape Grim, Tasmania",Australia,-40.683,144.690,94.0,+10 hours,"» Surface Flasks
+» HATS Flask Sampling
+» Aerosol Mobile and Cooperative Platforms"
+37,CHR,Christmas Island,Republic of Kiribati,1.700,-157.152,0.0,-10 hours,» Surface Flasks
+38,CHS*,Cherskii,Russia,68.513,161.531,30.0,+11 hours,» Surface In Situ*
+39,CIB,Centro de Investigacion de la Baja Atmosfera (CIBA),Spain,41.810,-4.930,845.0,+1 hours,» Surface Flasks
+40,CMA,"Offshore Cape May, New Jersey",United States,38.830,-74.320,0.0,-5 hours,"» Airborne Flasks
+» Ozone Airborne*"
+41,CMO*,"Cape Meares, Oregon",United States,45.478,-123.969,30.0,-8 hours,» Surface Flasks*
+42,COS*,Cosmos,Peru,-12.120,-75.330,4600.0,-5 hours,» Surface Flasks*
+43,CPR,Cape San Juan,"Puerto Rico, USA",18.381,-65.618,66.0,-4 hours,» Aerosol Mobile and Cooperative Platforms
+44,CPT,Cape Point,South Africa,-34.352,18.489,230.0,+2 hours,"» Surface Flasks
+» Aerosol Mobile and Cooperative Platforms"
+45,CRV,Carbon in Arctic Reservoirs Vulnerability Experiment (CARVE),United States,64.986,-147.598,611.4,-8 hours,"» Surface Flasks
+» Airborne Flasks*
+» In Situ Tall Tower"
+46,CRZ,Crozet Island,France,-46.434,51.848,197.0,+5 hours,» Surface Flasks
+47,DND*,"Dahlen, North Dakota",United States,47.500,-99.240,472.4,-6 hours,» Airborne Flasks*
+48,DRA,"Desert Rock, Nevada",United States,36.624,-116.019,1007.0,-8 hours,"» Surface Radiation Budget Monitoring
+» Meteorology"
+49,DRP,Drake Passage,N/A,-59.000,-64.690,0.0,-4 hours,» Surface Flasks
+50,DSI,Dongsha Island,Taiwan,20.699,116.730,3.0,+8 hours,» Surface Flasks
+51,EGB,"Egbert, Ontario",Canada,44.231,-79.784,251.0,-4 hours,» Aerosol Mobile and Cooperative Platforms
+52,EIC,Easter Island,Chile,-27.160,-109.428,47.0,-7 hours,» Surface Flasks
+53,ESP,"Estevan Point,  British Columbia",Canada,49.383,-126.544,7.0,-8 hours,"» Airborne Flasks
+» Ozone Airborne*"
+54,ETL,"East Trout Lake, Saskatchewan",Canada,54.354,-104.987,493.0,-6 hours,"» Airborne Flasks
+» Aerosol Mobile and Cooperative Platforms"
+55,EUR,"Eureka, Nunavut",Canada,79.983,-85.950,0.0,-4 hours,» Surface Ozone
+56,FBK,"Fairbanks, Alaska",United States,64.860,-147.850,133.0,-9 hours,"» Dobson Total Ozone
+» Dobson Umkehr Ozone"
+57,FLK*,Falkland Islands,United Kingdom,-51.700,-57.870,51.0,-5 hours,» Surface Flasks*
+58,FPK,"Fort Peck, Montana",United States,48.308,-105.102,634.0,-7 hours,"» Surface Radiation Budget Monitoring
+» Meteorology
+» Spectral UV Irradiance"
+59,FTL*,Fortaleza,Brazil,-3.520,-38.280,3.0,-3 hours,» Airborne Flasks*
+60,FWI*,"Fairchild, Wisconsin",United States,44.660,-90.960,334.3,-6 hours,"» Airborne Flasks*
+» Ozone Airborne*"
+61,GMI,Mariana Islands,Guam,13.386,144.656,0.0,+10 hours,» Surface Flasks
+62,GOZ*,"Dwejra Point, Gozo",Malta,36.048,14.889,1.0,+1 hours,» Surface Flasks*
+63,GSN,"Gosan, Cheju Island",Republic of Korea,33.280,126.150,72.0,+8 hours,» Aerosol Mobile and Cooperative Platforms
+64,GWN,"Goodwin Creek, Mississippi",United States,34.255,-89.873,98.0,-5 hours,"» Surface Radiation Budget Monitoring
+» Meteorology"
+65,HAA*,"Molokai Island, Hawaii",United States,21.230,-158.950,3.0,-10 hours,» Airborne Flasks*
+66,HBA,"Halley Station, Antarctica",United Kingdom,-75.605,-26.210,30.0,-2 hours,» Surface Flasks
+67,HFM,"Harvard Forest, Massachusetts",United States,42.538,-72.171,340.0,-5 hours,"» Airborne Flasks*
+» HATS Flask Sampling"
+68,HIH,"Hilo, Hawaii",United States,19.717,-155.049,11.0,-10 hours,"» Water Vapor Profiles
+» Ozonesonde"
+69,HIL,"Homer, Illinois",United States,40.070,-87.910,201.5,-6 hours,"» Airborne Flasks
+» Ozone Airborne*"
+70,HNX,"Hanford, California",United States,36.314,-119.632,73.0,-8 hours,"» Dobson Total Ozone
+» Solar Radiation"
+71,HPB,Hohenpeissenberg,Germany,47.801,11.024,936.0,+1 hours,» Surface Flasks
+72,HST,"Houston, Texas",United States,29.720,-95.400,19.0,-6 hours,» Spectral UV Irradiance
+73,HSU*,Humboldt State University,United States,41.059,-124.750,0.0,-8 hours,» Surface Flasks*
+74,HUA*,Huancayo,Peru,-12.050,-75.320,0.0,+5 hours,» Dobson Total Ozone*
+75,HUN,Hegyhatsal,Hungary,46.950,16.650,248.0,+1 hours,» Surface Flasks
+76,HVA*,"Huntsville, Alabama",United States,34.720,-86.640,0.0,+5 hours,» Ozonesonde*
+77,ICE,"Storhofdi, Vestmannaeyjar",Iceland,63.400,-20.288,118.0,+0 hours,"» Surface Flasks
+» Surface Ozone*"
+78,INX,INFLUX (Indianapolis Flux Experiment),United States,39.581,-86.421,,-5 hours,"» Surface Flasks
+» Airborne Flasks"
+79,ITN*,"Grifton, North Carolina",United States,35.365,-77.393,8.0,-5 hours,"» Surface Flasks*
+» In Situ Tall Tower*"
+80,IZO,"Izana, Tenerife, Canary Islands",Spain,28.309,-16.499,2372.9,+0 hours,» Surface Flasks
+81,KCO*,Kaashidhoo,Republic of Maldives,4.970,73.470,1.0,+5 hours,» Surface Flasks*
+82,KEY,"Key Biscayne, Florida",United States,25.665,-80.158,1.0,-5 hours,» Surface Flasks
+83,KPA*,"Kitt Peak, Arizona",United States,32.000,-112.000,2083.0,-7 hours,» Surface Flasks*
+84,KPS,"K-puszta, Kecskemét",Hungary,46.967,19.583,0.0,+1 hours,» Aerosol Mobile and Cooperative Platforms
+85,KUM,"Cape Kumukahi, Hawaii",United States,19.737,-155.012,0.3,-10 hours,"» Surface Flasks
+» HATS Flask Sampling"
+86,KWJ,Kwajalein,Marshall Islands,8.715,167.723,10.0,+0 hours,» Baseline Surface Radiation Network
+87,KZD*,Sary Taukum,Kazakhstan,44.084,76.871,595.0,+6 hours,» Surface Flasks*
+88,KZM*,Plateau Assy,Kazakhstan,43.250,77.880,2519.0,+6 hours,» Surface Flasks*
+89,LAC*,LA Megacities,United States,34.000,-118.200,100.0,-8 hours,» Surface Flasks*
+90,LAU,Lauder,New Zealand,-45.040,169.680,370.0,+12 hours,"» Surface Ozone
+» Dobson Total Ozone
+» Water Vapor Profiles
+» Ozonesonde
+» Dobson Umkehr Ozone"
+91,LEF,"Park Falls, Wisconsin",United States,45.945,-90.273,472.0,-6 hours,"» Surface Flasks
+» Airborne Flasks
+» In Situ Tall Tower
+» HATS Flask Sampling"
+92,LEW,"Lewisburg, Pennsylvania",United States,40.945,-76.879,161.0,-5 hours,» Surface Flasks
+93,LLB*,"Lac La Biche, Alberta",Canada,54.954,-112.467,540.0,-7 hours,» Surface Flasks*
+94,LLN,Lulin,Taiwan,23.470,120.870,2862.0,+8 hours,"» Surface Flasks
+» Aerosol Mobile and Cooperative Platforms"
+95,LMP,Lampedusa,Italy,35.518,12.632,45.0,+1 hours,» Surface Flasks
+96,MBC*,"Mould Bay, Northwest Territories",Canada,76.247,-119.353,30.0,-10 hours,» Surface Flasks*
+97,MBO,Mt. Bachelor Observatory,United States,43.977,-121.686,2731.0,-8 hours,"» Surface Flasks
+» Surface In Situ
+» Surface Ozone
+» Aerosol Mobile and Cooperative Platforms"
+98,MCM,"McMurdo Station, Antarctica",United States,-77.830,166.600,11.0,+12 hours,"» Surface Flasks*
+» Spectral UV Irradiance"
+99,MEX,High Altitude Global Climate Observation Center,Mexico,18.984,-97.311,4464.0,-6 hours,» Surface Flasks
+100,MFS,"Marshall Field Site, Boulder, Colorado",United States,39.949,-105.197,1743.0,-7 hours,"» Water Vapor Profiles
+» Ozonesonde"
+101,MHD,"Mace Head, County Galway",Ireland,53.326,-9.899,5.0,+0 hours,"» Surface Flasks
+» HATS Flask Sampling"
+102,MID,"Sand Island, Midway",United States,28.210,-177.380,11.0,-11 hours,» Surface Flasks
+103,MKN*,Mt. Kenya,Kenya,-0.062,37.297,3644.0,+3 hours,» Surface Flasks*
+104,MKO*,"Mauna Kea, Hawaii",United States,19.830,-155.470,4220.0,-10 hours,» Surface Flasks*
+105,MLF*,"Mauna Loa, Hawaii",United States,19.530,-155.580,3397.0,-10 hours,» Surface Flasks*
+106,MLO,"Mauna Loa, Hawaii",United States,19.536,-155.576,3397.0,-10 hours,"» Surface Flasks
+» In Situ Observatory
+» HATS Flask Sampling
+» HATS In Situ Observatory
+» Aerosol Surface In-Situ
+» Radiation In-Situ Observatory
+» Surface Ozone
+» Dobson Total Ozone
+» Lidar
+» Meteorology
+» Dobson Umkehr Ozone
+» Spectral UV Irradiance"
+107,MPO,Marcapomacocha,Peru,-11.400,-76.320,4500.0,-5 hours,» Dobson Total Ozone
+108,MRC,Marcellus Pennsylvania,United States,41.466,-76.419,592.0,-5 hours,» Surface Flasks
+109,MSA,Montsec,Spain,42.050,0.730,1571.0,+0 hours,» Aerosol Mobile and Cooperative Platforms
+110,MSH,"Mashpee, Massachusetts",United States,41.657,-70.497,32.3,-5 hours,» Surface Flasks
+111,MSN,"Madison, Wisconsin",United States,43.130,-89.330,271.0,-6 hours,» Solar Radiation
+112,MSY,Montseny,Spain,41.780,2.360,700.0,+0 hours,» Aerosol Mobile and Cooperative Platforms
+113,MVY*,"Marthas Vineyard, Massachusetts",United States,41.325,-70.567,0.0,-5 hours,» Surface Flasks*
+114,MWO,Mt. Wilson Observatory,United States,34.225,-118.059,1728.0,-8 hours,» Surface Flasks
+115,NAT,Farol De Mae Luiza Lighthouse,Brazil,-5.795,-35.185,50.0,-3 hours,» Surface Flasks
+116,NEB,"NE Baltimore, Maryland",United States,39.315,-76.583,44.0,-5 hours,» Surface Flasks
+117,NHA,"Offshore Portsmouth, New Hampshire (Isles of Shoals)",United States,42.950,-70.630,0.0,-5 hours,"» Airborne Flasks
+» Ozone Airborne*"
+118,NMB,Gobabeb,Namibia,-23.580,15.030,456.0,+1 hours,» Surface Flasks
+119,NRI*,"Narragansett, Rhode Island",United States,41.490,-71.420,21.0,-5 hours,» Ozonesonde*
+120,NWB,NW Baltimore,United States,39.344,-76.685,135.0,-5 hours,» Surface Flasks
+121,NWF*,"Niwot Ridge Forest, Colorado",United States,40.030,-105.550,3050.0,-7 hours,» Surface Flasks*
+122,NWR,"Niwot Ridge, Colorado",United States,40.053,-105.586,3523.0,-7 hours,"» Surface Flasks
+» HATS Flask Sampling
+» HATS In Situ Observatory
+» Surface Ozone
+» Aerosol Mobile and Cooperative Platforms*
+» Spectral UV Irradiance"
+123,NZL*,Kaitorete Spit,New Zealand,-43.830,172.630,3.0,+12 hours,» Surface Flasks*
+124,OHP,Haute Provence,France,43.917,5.750,580.0,+1 hours,"» Dobson Total Ozone
+» Dobson Umkehr Ozone"
+125,OIL*,"Oglesby, Illinois",United States,41.280,-88.940,192.6,-6 hours,"» Airborne Flasks*
+» Ozone Airborne*"
+126,OPW*,"Olympic Peninsula, Washington",United States,48.300,-124.628,486.0,-8 hours,» Surface Flasks*
+127,ORT*,"Oak Ridge, Tennesee",United States,35.960,-84.290,334.0,-5 hours,» Solar Radiation*
+128,OXK,Ochsenkopf,Germany,50.030,11.808,1022.0,+1 hours,» Surface Flasks
+129,PAL,"Pallas-Sammaltunturi, GAW Station",Finland,67.973,24.116,565.0,+2 hours,» Surface Flasks
+130,PCO*,"Pico, Azores",Portugal,38.470,-28.400,2225.0,-1 hours,"» Surface Flasks*
+» Surface Ozone*"
+131,PFA,"Poker Flat, Alaska",United States,64.900,-148.760,210.0,-9 hours,» Airborne Flasks
+132,POCN00*,Pacific Ocean (0 N),N/A,0.000,-155.000,10.0,,» Surface Flasks*
+133,POCN05*,Pacific Ocean (5 N),N/A,5.000,-151.000,10.0,,» Surface Flasks*
+134,POCN10*,Pacific Ocean (10 N),N/A,10.000,-149.000,10.0,,» Surface Flasks*
+135,POCN15*,Pacific Ocean (15 N),N/A,15.000,-145.000,10.0,,» Surface Flasks*
+136,POCN20*,Pacific Ocean (20 N),N/A,20.000,-141.000,10.0,,» Surface Flasks*
+137,POCN25*,Pacific Ocean (25 N),N/A,25.000,-139.000,10.0,,» Surface Flasks*
+138,POCN30*,Pacific Ocean (30 N),N/A,30.000,-135.000,10.0,,» Surface Flasks*
+139,POCN35*,Pacific Ocean (35 N),N/A,35.000,-137.000,10.0,,» Surface Flasks*
+140,POCN40*,Pacific Ocean (40 N),N/A,40.000,-136.000,10.0,,» Surface Flasks*
+141,POCN45*,Pacific Ocean (45 N),N/A,45.000,-131.000,10.0,,» Surface Flasks*
+142,POCS05*,Pacific Ocean (5 S),N/A,-5.000,-159.000,10.0,,» Surface Flasks*
+143,POCS10*,Pacific Ocean (10 S),N/A,-10.000,-161.000,10.0,,» Surface Flasks*
+144,POCS15*,Pacific Ocean (15 S),N/A,-15.000,-164.000,10.0,,» Surface Flasks*
+145,POCS20*,Pacific Ocean (20 S),N/A,-20.000,-167.000,10.0,,» Surface Flasks*
+146,POCS25*,Pacific Ocean (25 S),N/A,-25.000,-171.000,10.0,,» Surface Flasks*
+147,POCS30*,Pacific Ocean (30 S),N/A,-30.000,-176.000,10.0,,» Surface Flasks*
+148,POCS35*,Pacific Ocean (35 S),N/A,-35.000,180.000,10.0,,» Surface Flasks*
+149,PSA,"Palmer Station, Antarctica",United States,-64.774,-64.053,10.0,-3 hours,"» Surface Flasks
+» HATS Flask Sampling
+» Spectral UV Irradiance"
+150,PSM*,"Point Six Mountain, Montana",United States,47.030,-113.980,2462.0,-7 hours,» Surface Flasks*
+151,PSU,"Penn State, Pennsylvania",United States,40.720,-77.931,376.0,-5 hours,"» Surface Radiation Budget Monitoring
+» Meteorology"
+152,PTA*,"Point Arena, California",United States,38.955,-123.741,17.0,-8 hours,» Surface Flasks*
+153,PTH,Perth,Australia,-31.917,115.967,5.0,+8 hours,"» Dobson Total Ozone
+» Dobson Umkehr Ozone"
+154,RAL,"Raleigh, North Carolina",United States,35.730,-78.680,124.0,-5 hours,» Spectral UV Irradiance
+155,RPB,Ragged Point,Barbados,13.165,-59.432,15.0,-4 hours,"» Surface Flasks
+» Surface Ozone"
+156,RSL*,Resolute,Canada,74.717,-94.983,64.0,-6 hours,» Aerosol Mobile and Cooperative Platforms*
+157,RTA,Rarotonga,Cook Islands,-21.250,-159.830,3.0,-10 hours,» Airborne Flasks
+158,SAN*,Santarem,Brazil,-2.850,-54.950,78.0,-4 hours,» Airborne Flasks*
+159,SCA,"Offshore Charleston, South Carolina",United States,32.770,-79.550,0.0,-5 hours,"» Airborne Flasks
+» Ozone Airborne*"
+160,SCSN03*,South China Sea (3 N),N/A,3.000,105.000,15.0,,» Surface Flasks*
+161,SCSN06*,South China Sea (6 N),N/A,6.000,107.000,15.0,,» Surface Flasks*
+162,SCSN09*,South China Sea (9 N),N/A,9.000,109.000,15.0,,» Surface Flasks*
+163,SCSN12*,South China Sea (12 N),N/A,12.000,111.000,15.0,,» Surface Flasks*
+164,SCSN15*,South China Sea (15 N),N/A,15.000,113.000,15.0,,» Surface Flasks*
+165,SCSN18*,South China Sea (18 N),N/A,18.000,113.500,15.0,,» Surface Flasks*
+166,SCSN21*,South China Sea (21 N),N/A,21.000,114.000,15.0,,» Surface Flasks*
+167,SCT,"Beech Island, South Carolina",United States,33.406,-81.833,115.2,-5 hours,"» Surface Flasks
+» In Situ Tall Tower"
+168,SDZ*,Shangdianzi,China,40.650,117.117,293.0,+8 hours,» Surface Flasks*
+169,SEA,"Seattle, Washington",United States,47.680,-122.250,20.0,-8 hours,» Solar Radiation
+170,SEL*,Seoul,Republic of Korea,37.571,126.966,85.8,+0 hours,» Aerosol Mobile and Cooperative Platforms*
+171,SEY,Mahe Island,Seychelles,-4.682,55.532,2.0,+4 hours,» Surface Flasks
+172,SGI*,"Bird Island, South Georgia",United Kingdom,-54.000,-38.050,30.0,-3 hours,» Surface Flasks*
+173,SGP,"Southern Great Plains, Oklahoma",United States,36.607,-97.489,314.0,-6 hours,"» Surface Flasks
+» Airborne Flasks
+» Aerosol Mobile and Cooperative Platforms*
+» Ozone Airborne*"
+174,SHM,"Shemya Island, Alaska",United States,52.711,174.126,23.0,-10 hours,» Surface Flasks
+175,SIO*,"La Jolla, California",United States,32.830,-117.270,14.0,-8 hours,» Surface Flasks*
+176,SLC,Salt Lake City,United States,40.770,-111.970,1288.0,-7 hours,» Solar Radiation
+177,SMO,Tutuila,American Samoa,-14.247,-170.564,42.0,-11 hours,"» Surface Flasks
+» In Situ Observatory
+» HATS Flask Sampling
+» HATS In Situ Observatory
+» Aerosol Surface In-Situ*
+» Radiation In-Situ Observatory
+» Surface Ozone*
+» Dobson Total Ozone
+» Ozonesonde
+» Meteorology"
+178,SMR,Hyytiala,Finland,61.847,24.295,181.0,+2 hours,» Aerosol Mobile and Cooperative Platforms
+179,SNP,Shenandoah National Park,United States,38.617,-78.350,1008.0,-5 hours,» Surface In Situ
+180,SNS,Sierra Nevada,Spain,37.096,-3.387,2501.0,+1 hours,» Aerosol Mobile and Cooperative Platforms
+181,SPL,Storm Peak Laboratory (Desert Research Institute),United States,40.450,-106.730,3210.0,-7 hours,» Aerosol Mobile and Cooperative Platforms
+182,SPO,"South Pole, Antarctica",United States,-89.980,-24.800,2810.0,+12 hours,"» Surface Flasks
+» In Situ Observatory
+» HATS Flask Sampling
+» HATS In Situ Observatory
+» Aerosol Surface In-Situ
+» Radiation In-Situ Observatory
+» Surface Ozone
+» Dobson Total Ozone
+» Ozonesonde
+» Meteorology
+» Spectral UV Irradiance"
+183,STC*,Ocean Station Charlie,United States,54.000,-35.000,6.0,,» Surface Flasks*
+184,STM*,Ocean Station M,Norway,66.000,2.000,0.0,+0 hours,» Surface Flasks*
+185,STR,"Sutro Tower, San Francisco, California",United States,37.755,-122.452,254.0,-8 hours,» Surface Flasks
+186,SUM,Summit,Greenland,72.596,-38.422,3209.5,-2 hours,"» Surface Flasks
+» HATS Flask Sampling
+» HATS In Situ Observatory*
+» Aerosol Surface In-Situ
+» Radiation In-Situ Observatory*
+» Surface Ozone
+» Ozonesonde*
+» Meteorology"
+187,SUV,Suva,Fiji,-18.000,178.000,0.0,+12 hours,» Ozonesonde
+188,SVA,"Sterling, Virginia",United States,38.980,-77.470,85.0,-5 hours,» Solar Radiation
+189,SXF,"Sioux Falls, South Dakota",United States,43.734,-96.623,473.0,-6 hours,"» Surface Radiation Budget Monitoring
+» Meteorology"
+190,SYO,"Syowa Station, Antarctica",Japan,-69.013,39.590,14.0,+3 hours,» Surface Flasks
+191,TAC*,Tacolneston,United Kingdom,52.518,1.139,56.0,+0 hours,» Surface Flasks*
+192,TAL*,"Tallahassee, Florida",United States,30.430,-84.330,53.0,-5 hours,» Dobson Total Ozone*
+193,TAP,Tae-ahn Peninsula,Republic of Korea,36.738,126.133,16.0,+9 hours,» Surface Flasks
+194,TBL,Table Mountain,United States,40.125,-105.237,1689.0,-7 hours,"» Surface Radiation Budget Monitoring
+» Meteorology
+» Spectral UV Irradiance"
+195,TBP,Tambopata,Peru,-12.820,-69.292,200.0,-5 hours,» Surface In Situ
+196,TGC,"Offshore Corpus Christi, Texas",United States,27.730,-96.860,0.0,-6 hours,» Airborne Flasks
+197,THD,"Trinidad Head, California",United States,41.054,-124.151,107.0,-8 hours,"» Surface Flasks*
+» Airborne Flasks
+» HATS Flask Sampling
+» Aerosol Surface In-Situ*
+» Radiation In-Situ Observatory*
+» Surface Ozone
+» Ozonesonde
+» Meteorology*
+» Ozone Airborne*"
+198,TIK,Hydrometeorological Observatory of Tiksi,Russia,71.597,128.889,19.0,+9 hours,"» Surface Flasks
+» Surface Ozone
+» Aerosol Mobile and Cooperative Platforms"
+199,TLH*,"Tallahassee, Florida",United States,30.380,-84.370,18.0,-5 hours,» Solar Radiation*
+200,TMD,"Thurmont, Maryland",United States,39.577,-77.488,561.0,-5 hours,» Surface Flasks
+201,TPI,Taiping Island,Taiwan,10.379,114.371,4.0,+8 hours,» Surface Flasks
+202,TUN,"Tundra Lab, Niwot Ridge, Colorado",United States,40.054,-105.589,3538.0,+0 hours,» Surface Ozone
+203,UGR,University of Granada,Spain,37.164,-3.605,680.0,+0 hours,» Aerosol Mobile and Cooperative Platforms
+204,ULB*,Ulaanbaatar,Mongolia,47.400,106.000,1350.0,+8 hours,"» Airborne Flasks*
+» Ozone Airborne*"
+205,USH,Ushuaia,Argentina,-54.848,-68.311,12.0,-4 hours,"» Surface Flasks
+» HATS Flask Sampling*"
+206,UTA,"Wendover, Utah",United States,39.902,-113.718,1327.0,-7 hours,» Surface Flasks
+207,UUM,Ulaan Uul,Mongolia,44.452,111.096,1007.0,+8 hours,» Surface Flasks
+208,VAR,Varrio,Finland,67.755,29.609,400.0,+0 hours,» Aerosol Mobile and Cooperative Platforms
+209,WAI,"Wallops Island, Virginia",United States,37.860,-75.510,13.0,-5 hours,» Dobson Total Ozone
+210,WBI,"West Branch, Iowa",United States,41.725,-91.353,241.7,-6 hours,"» Surface Flasks
+» Airborne Flasks
+» In Situ Tall Tower
+» Ozone Airborne*"
+211,WGC,"Walnut Grove, California",United States,38.265,-121.491,0.0,-8 hours,"» Surface Flasks
+» Airborne Flasks*
+» In Situ Tall Tower"
+212,WHI,Whistler,Canada,50.059,-122.958,2182.0,-8 hours,» Aerosol Mobile and Cooperative Platforms
+213,WIS,"Weizmann Institute of Science at the Arava Institute, Ketura",Israel,29.965,35.060,151.0,+2 hours,» Surface Flasks
+214,WKT,"Moody, Texas",United States,31.315,-97.327,251.0,-6 hours,"» Surface Flasks
+» In Situ Tall Tower
+» Surface Ozone*"
+215,WLG,Mt. Waliguan,Peoples Republic of China,36.288,100.896,3810.0,+8 hours,"» Surface Flasks
+» Aerosol Mobile and Cooperative Platforms"
+216,WPCN00*,Western Pacific Cruise (0 N),N/A,0.000,151.100,0.0,,» Surface Flasks*
+217,WPCN05*,Western Pacific Cruise (5 N),N/A,5.000,149.100,0.0,,» Surface Flasks*
+218,WPCN10*,Western Pacific Cruise (10 N),N/A,10.000,148.000,0.0,,» Surface Flasks*
+219,WPCN15*,Western Pacific Cruise (15 N),N/A,15.000,145.000,0.0,,» Surface Flasks*
+220,WPCN20*,Western Pacific Cruise (20 N),N/A,20.000,142.000,0.0,,» Surface Flasks*
+221,WPCN25*,Western Pacific Cruise (25 N),N/A,25.000,140.000,0.0,,» Surface Flasks*
+222,WPCN30*,Western Pacific Cruise (30 N),N/A,30.000,136.800,0.0,,» Surface Flasks*
+223,WPCS05*,Western Pacific Cruise (5 S),N/A,-5.000,153.700,0.0,,» Surface Flasks*
+224,WPCS10*,Western Pacific Cruise (10 S),N/A,-10.000,156.800,0.0,,» Surface Flasks*
+225,WPCS15*,Western Pacific Cruise (15 S),N/A,-15.000,159.300,0.0,,» Surface Flasks*
+226,WPCS20*,Western Pacific Cruise (20 S),N/A,-20.000,161.100,0.0,,» Surface Flasks*
+227,WPCS25*,Western Pacific Cruise (25 S),N/A,-25.000,165.500,0.0,,» Surface Flasks*
+228,WPCS30*,Western Pacific Cruise (30 S),N/A,-30.000,168.000,0.0,,» Surface Flasks*
+229,WSA*,"Sable Island, Nova Scotia",Canada,43.932,-60.009,5.0,-4 hours,» Aerosol Mobile and Cooperative Platforms*
+230,WVR,"Weaverville, California",United States,40.731,-122.942,613.0,-8 hours,» Surface Ozone
+231,ZEP,"Ny-Alesund, Svalbard",Norway and Sweden,78.907,11.888,474.0,+1 hours,» Surface Flasks
