@@ -5,7 +5,8 @@ import pandas as pd
 from pyowm.weatherapi25.weather import Weather
 
 from AIForecast import sysutils
-from AIForecast.sysutils import owm_access as owm, PathUtils, datautils
+from AIForecast.sysutils import owm_access as owm, datautils
+from AIForecast.utils import PathUtils
 
 DEG_F = 'fahrenheit'
 DEG_C = 'celsius'

@@ -2,14 +2,14 @@
 from AIForecast import utils
 import tkinter as tk
 
-from AIForecast.access import WeatherAccess
 from AIForecast.ui.widgets import AppWindow, Menus, MainMenu, TestMenu, TrainMenu, ClimateChangeMenu
+from AIForecast.weather import dataaccess
 
 
 def main():
     utils.log(__name__).debug('Starting AI-Weather Forecast!')
 
-    WeatherAccess.load_historical_data()
+    # dataaccess.load_historical_data()
 
     root = tk.Tk()
     root.title("AI-Weather Forecast")

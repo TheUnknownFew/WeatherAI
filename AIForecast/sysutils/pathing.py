@@ -24,7 +24,7 @@ class FolderStructure(Enum):
       enumeration that is the parent. An empty string as the parent can be used to represent a base directory.
     """
 
-    ROOT_DIR = ('', mkpath('..', '..', DEFAULT_ROOT_NAME))
+    ROOT_DIR = ('', mkpath('..', DEFAULT_ROOT_NAME))
     """
     | Location: ./AIClimateChange
     | Path:     ../../AIClimateChange 

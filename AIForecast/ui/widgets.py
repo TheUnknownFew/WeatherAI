@@ -1,21 +1,21 @@
-import time
 import tkinter as tk
 from enum import Enum
-from threading import Thread
 from tkinter.filedialog import asksaveasfile
 from typing import List, Dict
 
+
 from AIForecast import utils
-from AIForecast.RNN.WeatherForecasting import ForecastingNetwork
-from AIForecast.access import ClimateAccess
-from AIForecast.access import WeatherAccess
-from AIForecast.utils import DataUtils
+from AIForecast.modeling.dataprocessing import DataImputer, StraightSplit, RollingSplit, ExpandingSplit, \
+    MinMaxNormalizer, ZStandardizer, SupervisedTimeseriesTransformer
 
 import pandas as pd
+import numpy as np
 from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
-from pandastable import Table, TableModel
+from pandastable import Table
+
+from AIForecast.weather import ClimateAccess
 
 BACKGROUND_COLOR = '#525453'
 """
@@ -212,22 +212,22 @@ class IOMenu(SplitWindowMenu):
         self.right_pane: tk.Frame = None
         # Input frame elements:
         # Right pane:
-        self.source_select_label: tk.Label = None
-        # Left pane:
-        self.surrounding_cities_label: tk.Label = None
-        self.surrounding_cities_select: tk.Listbox = None
-        self.target_city_var = tk.StringVar()
-        self.target_city_label: tk.Label = None
-        self.target_city_select: tk.OptionMenu = None
-        # Output frame elements:
+        # self.source_select_label: tk.Label = None
+        # # Left pane:
+        # self.surrounding_cities_label: tk.Label = None
+        # self.surrounding_cities_select: tk.Listbox = None
+        # self.target_city_var = tk.StringVar()
+        # self.target_city_label: tk.Label = None
+        # self.target_city_select: tk.OptionMenu = None
+        # # Output frame elements:
         self.output_label_text = output_label
         self.output_label: tk.Label = None
         self.button_execute: tk.Button = None
         self.output_window: tk.Text = None
 
-    def _populate_surrounding_cities_listbox(self):
-        for city in WeatherAccess.cities:
-            self.surrounding_cities_select.insert(tk.END, city)
+    # def _populate_surrounding_cities_listbox(self):
+    #     for city in dataaccess.get_cities():
+    #         self.surrounding_cities_select.insert(tk.END, city)
 
     def init_ui(self):
         super().init_ui()
@@ -237,31 +237,32 @@ class IOMenu(SplitWindowMenu):
         self._init_output_frame()
 
     def _init_input_frame(self):
-        self.source_select_label = tk.Label(
-            self.left_pane,
-            text=self._INPUT_LABEL,
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR,
-            font=H1_FONT
-        )
-        self.surrounding_cities_label = tk.Label(
-            self.right_pane,
-            text=self._CITY_SELECT_LABEL,
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR,
-            font=H1_FONT
-        )
-        self.surrounding_cities_select = tk.Listbox(self.right_pane, selectmode="extended")
-        self._populate_surrounding_cities_listbox()
-        self.target_city_label = tk.Label(
-            self.right_pane,
-            text=self._TARGET_SELECT_LABEL,
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR,
-            font=H1_FONT
-        )
-        self.target_city_select = tk.OptionMenu(self.right_pane, self.target_city_var, *WeatherAccess.cities)
-        self.target_city_var.set(next(iter(WeatherAccess.get_cities())))
+        pass
+        # self.source_select_label = tk.Label(
+        #     self.left_pane,
+        #     text=self._INPUT_LABEL,
+        #     bg=BACKGROUND_COLOR,
+        #     fg=FOREGROUND_COLOR,
+        #     font=H1_FONT
+        # )
+        # self.surrounding_cities_label = tk.Label(
+        #     self.right_pane,
+        #     text=self._CITY_SELECT_LABEL,
+        #     bg=BACKGROUND_COLOR,
+        #     fg=FOREGROUND_COLOR,
+        #     font=H1_FONT
+        # )
+        # self.surrounding_cities_select = tk.Listbox(self.right_pane, selectmode="extended")
+        # self._populate_surrounding_cities_listbox()
+        # self.target_city_label = tk.Label(
+        #     self.right_pane,
+        #     text=self._TARGET_SELECT_LABEL,
+        #     bg=BACKGROUND_COLOR,
+        #     fg=FOREGROUND_COLOR,
+        #     font=H1_FONT
+        # )
+        # self.target_city_select = tk.OptionMenu(self.right_pane, self.target_city_var, *dataaccess.cities)
+        # self.target_city_var.set(next(iter(dataaccess.get_cities())))
 
     def _init_output_frame(self):
         self.output_label = tk.Label(self.bottom, text=self.output_label_text, bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR)
@@ -279,13 +280,14 @@ class IOMenu(SplitWindowMenu):
         self._draw_output_frame()
 
     def _draw_input_frame(self):
-        self.source_select_label.place(x=_ALIGN_X, y=_ALIGN_Y)
-        self.surrounding_cities_label.place(x=_ALIGN_X, y=_ALIGN_Y)
-        label_height = self.get_label_height()
-        label_width = self.get_label_width()
-        self.surrounding_cities_select.place(x=_ALIGN_X + 5, y=_ALIGN_Y + label_height, width=label_width)
-        self.target_city_label.place(x=label_width + 30, y=_ALIGN_Y)
-        self.target_city_select.place(x=label_width + 35, y=_ALIGN_Y + label_height)
+        pass
+        # self.source_select_label.place(x=_ALIGN_X, y=_ALIGN_Y)
+        # self.surrounding_cities_label.place(x=_ALIGN_X, y=_ALIGN_Y)
+        # label_height = self.get_label_height()
+        # label_width = self.get_label_width()
+        # self.surrounding_cities_select.place(x=_ALIGN_X + 5, y=_ALIGN_Y + label_height, width=label_width)
+        # self.target_city_label.place(x=label_width + 30, y=_ALIGN_Y)
+        # self.target_city_select.place(x=label_width + 35, y=_ALIGN_Y + label_height)
 
     def _draw_output_frame(self):
         self.output_label.place(x=_ALIGN_X, y=_ALIGN_Y)
@@ -297,36 +299,36 @@ class IOMenu(SplitWindowMenu):
         super().hide()
         self.left_pane.destroy()
         self.right_pane.destroy()
-        self.source_select_label.destroy()
-        self.surrounding_cities_label.destroy()
-        self.surrounding_cities_select.destroy()
-        self.target_city_label.destroy()
-        self.target_city_select.destroy()
+        # self.source_select_label.destroy()
+        # self.surrounding_cities_label.destroy()
+        # self.surrounding_cities_select.destroy()
+        # self.target_city_label.destroy()
+        # self.target_city_select.destroy()
         self.output_label.destroy()
         self.button_execute.destroy()
         self.output_window.destroy()
 
-    def get_label_width(self):
-        return self.surrounding_cities_label.winfo_reqwidth()
-
-    def get_label_height(self):
-        return self.surrounding_cities_label.winfo_reqheight()
+    # def get_label_width(self):
+    #     return self.surrounding_cities_label.winfo_reqwidth()
+    #
+    # def get_label_height(self):
+    #     return self.surrounding_cities_label.winfo_reqheight()
 
     def output(self, message: str):
         self.output_window.delete("1.0", tk.END)
         self.output_window.insert(tk.INSERT, message)
         self.output_window.update()
 
-    @property
-    def selected_cities(self):
-        return [city for city in
-                [self.surrounding_cities_select.get(i)
-                 for i in self.surrounding_cities_select.curselection()]
-                if city != self.target_city_var]
+    # @property
+    # def selected_cities(self):
+    #     return [city for city in
+    #             [self.surrounding_cities_select.get(i)
+    #              for i in self.surrounding_cities_select.curselection()]
+    #             if city != self.target_city_var]
 
-    @property
-    def target_city(self):
-        return self.target_city_var.get()
+    # @property
+    # def target_city(self):
+    #     return self.target_city_var.get()
 
 
 class MainMenu(Menu):
@@ -420,7 +422,7 @@ class TestMenu(IOMenu):
 class TrainMenu(IOMenu):
     def __init__(self, app_frame: tk.Frame):
         super().__init__(app_frame, "Press the button below to begin training:")
-        self.normalization_options = ('Min-Max', 'Two Standardization')
+        self.normalization_options = ('Min-Max', 'Z Standardization')
         self.normalization_selection = tk.StringVar()
         self.split_type_options = ("Straight Split", "Rolling Split", "Expanding Split")
         self.split_type_selection = tk.StringVar()
@@ -440,6 +442,7 @@ class TrainMenu(IOMenu):
         self.rolling_stride_size = None
         self.expanding_training_size = None
         self.expanding_validation_size = None
+        self.expanding_testing_size = None
         self.expanding_gap_size = None
         self.expanding_expansion_rate = None
         self.normalization_selector = None
@@ -448,7 +451,7 @@ class TrainMenu(IOMenu):
         self.input_width = None
         self.output_width = None
         self.stride = None
-        self.gap_size = None
+        self.time_offset = None
         self.epoch = None
         self.train_model_button = None
         self.output_text = None
@@ -468,6 +471,7 @@ class TrainMenu(IOMenu):
         self.rolling_stride_size_label = None
         self.expanding_training_size_label = None
         self.expanding_validation_size_label = None
+        self.expanding_testing_size_label = None
         self.expanding_gap_size_label = None
         self.expanding_expansion_rate_label = None
         self.training_features_label = None
@@ -476,7 +480,7 @@ class TrainMenu(IOMenu):
         self.input_width_label = None
         self.output_width_label = None
         self.stride_label = None
-        self.gap_size_label = None
+        self.label_offset_label = None
         self.output_text_label = None
         self.learning_rate = None
         self.learning_rate_label = None
@@ -554,6 +558,12 @@ class TrainMenu(IOMenu):
         self.expanding_validation_size.insert(tk.END, '0')
         self.expanding_validation_size_label = tk.Label(self.input_frame, text="Validation Size:", bg=BACKGROUND_COLOR,
                                                         fg=FOREGROUND_COLOR, anchor="e")
+
+        self.expanding_testing_size = tk.Text(self.input_frame)
+        self.expanding_testing_size.insert(tk.END, '10')
+        self.expanding_testing_size_label = tk.Label(self.input_frame, text="Testing Size:", bg=BACKGROUND_COLOR,
+                                                     fg=FOREGROUND_COLOR, anchor="e")
+
         self.expanding_gap_size = tk.Text(self.input_frame)
         self.expanding_gap_size.insert(tk.END, '0')
         self.expanding_gap_size_label = tk.Label(self.input_frame, text="Gap Size:", bg=BACKGROUND_COLOR,
@@ -570,10 +580,10 @@ class TrainMenu(IOMenu):
         )
         self.normalization_selector_label = tk.Label(self.input_frame, text="Normalization Type:",
                                                      bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR, anchor="e")
-        self.training_features = tk.Listbox(self.input_frame)
+        self.training_features = tk.Listbox(self.input_frame, exportselection=0, selectmode=tk.EXTENDED)
         self.training_features_label = tk.Label(self.input_frame, text="Training Features:", bg=BACKGROUND_COLOR,
                                                 fg=FOREGROUND_COLOR, anchor="e")
-        self.output_features = tk.Listbox(self.input_frame)
+        self.output_features = tk.Listbox(self.input_frame, exportselection=0, selectmode=tk.EXTENDED)
         self.output_features_label = tk.Label(self.input_frame, text="Output Features:", bg=BACKGROUND_COLOR,
                                               fg=FOREGROUND_COLOR, anchor="e")
         self.input_width = tk.Text(self.input_frame)
@@ -588,10 +598,10 @@ class TrainMenu(IOMenu):
         self.stride.insert(tk.END, '1')
         self.stride_label = tk.Label(self.input_frame, text="Stride Size:", bg=BACKGROUND_COLOR,
                                      fg=FOREGROUND_COLOR, anchor="e")
-        self.gap_size = tk.Text(self.input_frame)
-        self.gap_size.insert(tk.END, '0')
-        self.gap_size_label = tk.Label(self.input_frame, text="Gap Size:", bg=BACKGROUND_COLOR,
-                                       fg=FOREGROUND_COLOR, anchor="e")
+        self.time_offset = tk.Text(self.input_frame)
+        self.time_offset.insert(tk.END, '0')
+        self.label_offset_label = tk.Label(self.input_frame, text="Time offset:", bg=BACKGROUND_COLOR,
+                                           fg=FOREGROUND_COLOR, anchor="e")
         self.epoch = tk.Text(self.input_frame)
         self.epoch.insert(tk.END, '30')
         self.epoch_label = tk.Label(self.input_frame, text="Epoch:", bg=BACKGROUND_COLOR,
@@ -643,8 +653,8 @@ class TrainMenu(IOMenu):
         self.output_width.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 280, height=25, width=200)
         self.stride_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 320, width=100)
         self.stride.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 320, height=25, width=200)
-        self.gap_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 320, width=100)
-        self.gap_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 320, height=25, width=200)
+        self.label_offset_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 320, width=100)
+        self.time_offset.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 320, height=25, width=200)
         self.train_model_button.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 360, width=150)
         self.save_model_button.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 360, width=150)
         self.output_text_label.place(x=_ALIGN_X + 5)
@@ -665,6 +675,7 @@ class TrainMenu(IOMenu):
         self.expanding_gap_size.place_forget()
         self.expanding_training_size.place_forget()
         self.expanding_validation_size.place_forget()
+        self.expanding_testing_size.place_forget()
         self.expanding_expansion_rate.place_forget()
         self.straight_validation_slider_label.place_forget()
         self.straight_training_slider_label.place_forget()
@@ -676,6 +687,7 @@ class TrainMenu(IOMenu):
         self.expanding_gap_size_label.place_forget()
         self.expanding_training_size_label.place_forget()
         self.expanding_validation_size_label.place_forget()
+        self.expanding_testing_size_label.place_forget()
         self.expanding_expansion_rate_label.place_forget()
         if selection == self.split_type_options[0]:
             self.straight_training_slider_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 85, width=100)
@@ -698,17 +710,60 @@ class TrainMenu(IOMenu):
             self.expanding_training_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 85, width=200, height=25)
             self.expanding_validation_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 85, width=100)
             self.expanding_validation_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 85, width=200, height=25)
-            self.expanding_gap_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, width=100)
-            self.expanding_gap_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 125, width=200, height=25)
-            self.expanding_expansion_rate_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 125, width=100)
-            self.expanding_expansion_rate.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 125, width=200, height=25)
+            self.expanding_testing_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, width=100)
+            self.expanding_testing_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 125, width=200, height=25)
+            self.expanding_gap_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 125, width=100)
+            self.expanding_gap_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 125, width=200, height=25)
+            self.expanding_expansion_rate_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 125, width=100)
+            self.expanding_expansion_rate.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 125, width=200, height=25)
 
     def save_model(self):
         training_model_file_types = [('All types(*.*)', '*.*')]
         file = asksaveasfile(filetypes=training_model_file_types, defaultextention=training_model_file_types)
 
     def train_model(self):
-        pass
+        imputer = self.inputer_selection.get()
+        imputed_data = DataImputer(imputer)(self.training_csv)
+        split = self.split_type_selection.get()
+        splits = None
+        if split == 'Straight Split':
+            train_size = self.straight_training_slider.get() / 100
+            val_size = self.straight_validation_slider.get() / 100
+            splits = StraightSplit(train_size, val_size)(imputed_data)
+        elif split == 'Rolling Split':
+            train_size = self.rolling_training_size.get()
+            test_size = self.rolling_testing_size.get()
+            val_size = self.rolling_validation_size.get()
+            stride = self.rolling_stride_size.get()
+            gap = self.rolling_gap_size.get()
+            splits = RollingSplit(train_size, test_size, val_size, stride, gap)(imputed_data)
+        elif split == 'Expanding Split':
+            train_size = self.expanding_training_size.get()
+            test_size = self.expanding_testing_size.get()
+            val_size = self.expanding_validation_size.get()
+            expansion_rate = self.expanding_expansion_rate.get()
+            gap = self.expanding_gap_size.get()
+            splits = ExpandingSplit(train_size, test_size, val_size, expansion_rate, gap)(imputed_data)
+        normalizer = self.normalization_selection.get()
+        normalized_splits = None
+        if normalizer == 'Min-Max':
+            normalized_splits = MinMaxNormalizer(splits)()
+        elif normalizer == 'Z Standardization':
+            normalized_splits = ZStandardizer(splits)()
+        features_in = [self.training_features.get(i) for i in self.training_features.curselection()]
+        features_out = [self.output_features.get(i) for i in self.output_features.curselection()]
+        width_in = int(self.input_width.get("1.0", "end-1c"))
+        width_out = int(self.output_width.get("1.0", "end-1c"))
+        transformer_stride = int(self.stride.get("1.0", "end-1c"))
+        time_offset = int(self.time_offset.get("1.0", "end-1c"))
+        timeseries_data = SupervisedTimeseriesTransformer(features_in,
+                                                          features_out,
+                                                          width_in,
+                                                          width_out,
+                                                          transformer_stride,
+                                                          time_offset)(normalized_splits)
+        for sampleset in timeseries_data:
+            print(sampleset)
 
     def generate_training_and_output_features(self):
         self.training_features.delete(0, tk.END)
@@ -721,7 +776,8 @@ class TrainMenu(IOMenu):
     def upload_csv(self):
         new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
         if new_data is not None:
-            self.training_csv = pd.read_csv(new_data)
+            df = pd.read_csv(new_data)
+            self.training_csv = df.select_dtypes(include=[np.number])
             self.generate_training_and_output_features()
 
     def upload_schema(self):
@@ -744,7 +800,10 @@ class ClimateChangeMenu(Menu):
 
     def init_ui(self):
         Menu.init_ui(self)
-        self.source_data = ClimateAccess.get_source_data()
+        try:
+            self.source_data = ClimateAccess.get_source_data()
+        except FileNotFoundError:
+            print('Unable to load Default Data')
         self.graph_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
         self.tool_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
         self.upload_new_data = tk.Button(

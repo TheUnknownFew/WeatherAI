@@ -11,7 +11,8 @@ from tensorflow.python.keras.layers import LSTM, Dense
 from tensorflow.python.keras.models import Sequential, load_model
 
 from AIForecast import sysutils
-from AIForecast.sysutils import datautils, PathUtils
+from AIForecast.sysutils import datautils
+from AIForecast.utils import PathUtils
 
 
 class TimestepBatchGenerator:

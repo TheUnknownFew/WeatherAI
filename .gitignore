@@ -7,3 +7,4 @@ AIClimateChange/owm_apikey.txt
 
 research/data
 *.pyc
+__pycache__/

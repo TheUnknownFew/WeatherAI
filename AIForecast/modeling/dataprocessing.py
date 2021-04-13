@@ -94,6 +94,13 @@ class TimeseriesData:
         self.validation_samples: SampleSet = SampleSet()
         self.test_samples: SampleSet = SampleSet()
 
+    def __repr__(self):
+        return f'Training Samples:\n' \
+               f'{self.training_samples}\n\n' \
+               f'Validation Samples:\n' \
+               f'{self.validation_samples}\n\n' \
+               f'Testing Samples:\n{self.test_samples}'
+
 
 # ----------- Data Processing Classes : ------------ #
 #
@@ -102,11 +109,21 @@ class TimeseriesData:
 
 
 class DataImputer:
-    def __init__(self, imputer: Union[SimpleImputer, IterativeImputer]):
-        self.imputer = imputer
+    def __init__(self, imputer: str):
+        if imputer not in {'Iterative', 'Simple', 'None'}:
+            raise ValueError(f'Imputer type "{imputer}" was not recognized as an imputer.')
+        self. imputer_type = imputer
+        if self.imputer_type == 'Iterative':
+            self.imputer = IterativeImputer(missing_values=np.nan,
+                                            initial_strategy='most_frequent',
+                                            imputation_order='arabic')
+        elif self.imputer_type == 'Simple':
+            self.imputer = SimpleImputer(missing_values=np.nan)
 
     def __call__(self, data: pd.DataFrame):
-        return self.imputer.fit(data)
+        if self.imputer_type == 'None':
+            return data
+        return pd.DataFrame(self.imputer.fit_transform(data), columns=data.columns)
 
 
 # --------- Pipeline Processing Classes : ---------- #
@@ -314,7 +331,7 @@ class ForecastModeler:
 
     def __call__(self, sample_set: List[TimeseriesData], epochs=10, learning_rate=0.001):
         if not self.is_trained:
-            self.model.compile(optimizer='adam')
+            self.model.compile(optimizer=tf.optimizers.Adam(learning_rate=learning_rate))
 
         for samples in sample_set:
             val_set = (samples.validation_samples.samples, samples.validation_samples.labels) \
@@ -326,3 +343,46 @@ class ForecastModeler:
                 validation_data=val_set
             )
         return self.model
+
+
+# File Selector : csv file -> Training
+# File Selector : model schema -> Training
+# Drop down to select an imputer : None, Simple, Iterative
+# Drop down to select a split type : Straight, Rolling, Expanding
+
+# Straight split:
+    # Training percentage: a % -> 80% or 0.8 Optional
+    # Validation percentage: a % -> 0% or 0.0 Optional
+
+# Rolling Split:
+    # training size: an integer or percent -> 0.2 or 20%
+    # validation size: an integer -> 0%
+    # testing size: an integer -> 10%
+    # gap size: an integer -> 0
+    # stride: an integers -> 1
+
+# Expanding Split:
+    # initial training size: an integer or percentage
+    # validation size: an integer or percentage 0%
+    # gap size: an integer -> 0
+    # expansion rate: an integer -> 1
+
+# Drop down to select normalization type: Min-Max norm, Z-standardization
+# Training Features = [], output features = []
+# Input width: integer -> 3
+# Output width: integer -> 1
+# stride: integer -> 1
+# gap: integer -> 0
+
+# Text field for hyper-parameters <- may or may not get implemented
+
+# Button <label train model>
+# Output for a model evaluation and data plots. -> data plots will plot the predictions of the train and test data.
+# Button to save trained model.
+
+# Test menu:
+# File Selector: trained model file.
+# Time horizon: integer -> months
+# Submit button
+# Output window with a plot plotting a graph from the end of the data to the future time horizon, plotting the
+# forecast into the future.
