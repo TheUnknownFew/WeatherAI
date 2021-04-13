@@ -1,8 +1,9 @@
 .idea
 venv
-Data.json
-Data.csv
+AIClimateChange/data/weather/historical_weather.json
+AIClimateChange/data/weather/historical_weather.csv
 Data.cvs
-owm_apikey.txt
+AIClimateChange/owm_apikey.txt
 
 research/data
+*.pyc

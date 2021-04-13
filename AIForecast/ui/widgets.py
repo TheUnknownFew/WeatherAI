@@ -2,12 +2,20 @@ import time
 import tkinter as tk
 from enum import Enum
 from threading import Thread
+from tkinter.filedialog import asksaveasfile
 from typing import List, Dict
 
 from AIForecast import utils
 from AIForecast.RNN.WeatherForecasting import ForecastingNetwork
+from AIForecast.access import ClimateAccess
 from AIForecast.access import WeatherAccess
 from AIForecast.utils import DataUtils
+
+import pandas as pd
+from tkinter import filedialog
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.figure import Figure
+from pandastable import Table, TableModel
 
 BACKGROUND_COLOR = '#525453'
 """
@@ -26,6 +34,9 @@ BUTTON_FOREGROUND = 'black'
 _ALIGN_X = 10
 _ALIGN_Y = 10
 
+CSV_FILE_TYPE = '*.csv'
+CSV_FILE_LABEL = 'CSV Files'
+
 
 class Menus(Enum):
     """
@@ -37,6 +48,7 @@ class Menus(Enum):
     MAIN_MENU = 0
     TEST_MENU = 1
     TRAIN_MENU = 2
+    DATA_VIEWER_MENU = 3
 
 
 class Drawable:
@@ -72,7 +84,6 @@ class Drawable:
 
 
 class NavBar(Drawable):
-
     NAV_COLOR = 'gray'
     NAV_HEIGHT = 40
 
@@ -113,12 +124,22 @@ class NavBar(Drawable):
                 command=lambda: AppWindow.display_screen(Menus.TRAIN_MENU)
             )
         )
+        self.nav_buttons.append(
+            tk.Button(
+                self.nav_frame,
+                text="Data Viewer",
+                borderwidth=BUTTON_BORDER_WIDTH,
+                bg=BUTTON_BACKGROUND,
+                fg=BUTTON_FOREGROUND,
+                command=lambda: AppWindow.display_screen(Menus.DATA_VIEWER_MENU)
+            )
+        )
 
     def draw(self):
         self.nav_frame.place(x=0, y=0, relwidth=1, height=self.NAV_HEIGHT)
         i = 0
         for button in self.nav_buttons:
-            button.place(x=10 + 100*i + 5*i, rely=0.2, relheight=0.55, width=100)
+            button.place(x=10 + 100 * i + 5 * i, rely=0.2, relheight=0.55, width=100)
             i += 1
 
     def hide(self):
@@ -181,7 +202,6 @@ class SplitWindowMenu(Menu):
 
 
 class IOMenu(SplitWindowMenu):
-
     _INPUT_LABEL = "Choose Input Source:"
     _CITY_SELECT_LABEL = "Choose surrounding cities from the list:"
     _TARGET_SELECT_LABEL = "Choose a target city from the list:"
@@ -316,7 +336,7 @@ class MainMenu(Menu):
     Alexander Cherry, Anthony Ernst, and Marcus Kline
 
     Previously worked on by:
-    Jason, Swatt, and Tiger
+    Jason Sutton, Swatt Zhou, and Tiger Goodbread
     """
 
     def __init__(self, app_frame: tk.Frame):
@@ -338,247 +358,488 @@ class MainMenu(Menu):
 
 class TestMenu(IOMenu):
     def __init__(self, app_frame: tk.Frame):
-        super().__init__(app_frame, "Press the button below to generate a prediction:")
-        self.radio_group = tk.IntVar()
-        self.source_current_radio: tk.Radiobutton = None
-        self.source_manual_radio: tk.Radiobutton = None
-        self.source_radio_label: tk.Label = None
-        self.button_enter: tk.Button = None
+        super().__init__(app_frame)
+        self.upload_trained_model_button = None
+        self.trained_model = None
+        self.output_frame = None
+        self.input_frame = None
+        self.time_horizon = None
+        self.time_horizon_label = None
+        self.test_button = None
+        self.output_text = None
+        self.output_text_label = None
 
     def init_ui(self):
         super().init_ui()
-        self.source_current_radio = tk.Radiobutton(
-            self.left_pane,
-            text="Current",
-            variable=self.radio_group,
-            value=1,
-            borderwidth=5,
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR,
-            selectcolor='gray',
-            command=self._on_radio_current
-        )
-        self.source_manual_radio = tk.Radiobutton(
-            self.left_pane,
-            text="Manual",
-            variable=self.radio_group,
-            value=2,
-            borderwidth=5,
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR,
-            selectcolor='gray',
-            command=self._on_radio_manual
-        )
-        self.source_radio_label = tk.Label(self.left_pane, text="temporary", bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR)
-        self.button_enter = tk.Button(
-            self.left_pane,
-            text="Enter Data",
+        self.input_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
+        self.output_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
+        self.upload_trained_model_button = tk.Button(
+            self.input_frame,
+            text="Upload Trained Model",
             bg=BUTTON_BACKGROUND,
             fg=BUTTON_FOREGROUND,
-            command=self._on_enter_data
+            command=lambda: self.upload_trained_model()
         )
-        self.source_current_radio.select()
-        self.source_current_radio.invoke()
-        self.button_execute.config(command=self._on_execute)
+        self.time_horizon_label = tk.Label(self.input_frame, text="Time Horizon (Hours)", bg=BACKGROUND_COLOR,
+                                           fg=FOREGROUND_COLOR, anchor="w")
+        self.time_horizon = tk.Text(self.input_frame)
+        self.test_button = tk.Button(
+            self.input_frame,
+            text="Test",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.test_model()
+        )
+        self.output_text_label = tk.Label(self.output_frame, text="Output:", bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR,
+                                          anchor="w")
+        self.output_text = tk.Label(self.output_frame)
 
     def draw(self):
         super().draw()
-        label_height = self.get_label_height()
-        self.source_current_radio.place(x=_ALIGN_X, y=_ALIGN_Y + label_height)
-        radio_width = self.source_current_radio.winfo_reqwidth()
-        self.source_manual_radio.place(x=_ALIGN_X + radio_width + 5, y=_ALIGN_Y + label_height)
-        self.source_radio_label.place(x=_ALIGN_X, y=_ALIGN_Y * 7)
-        self.button_enter.place(x=_ALIGN_X + 5, y=_ALIGN_Y * 11)
+        self.output_frame.place(relx=.2, rely=0, relwidth=.8, relheight=1)
+        self.input_frame.place(relx=0, rely=0, relwidth=.2, relheight=1)
+        self.upload_trained_model_button.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 5, width=150)
+        self.time_horizon_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 45, width=150)
+        self.time_horizon.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 70, width=150, height=25)
+        self.output_text_label.place(relx=.05)
+        self.output_text.place(relx=.05, rely=.05, relwidth=.9, relheight=.9)
+        self.test_button.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, width=150)
 
     def hide(self):
         super().hide()
-        self.source_manual_radio.destroy()
-        self.source_manual_radio.destroy()
-        self.source_radio_label.destroy()
-        self.button_enter.destroy()
 
-    def _on_radio_current(self):
-        """
-        run_radio_1 is the command routine for source_current_radio.
-        """
-        self.source_radio_label.config(text="Use current data to make a prediction.")
-        self.button_execute.config(state='normal')
-        self.surrounding_cities_select.config(state='disabled')
-        self.button_enter.config(state='disabled')
+    def upload_trained_model(self):
+        new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
+        if new_data is not None:
+            self.trained_model = pd.read_csv(new_data)
 
-    def _on_radio_manual(self):
-        """
-        run_radio_2 is the command routine for source_manual_radio.
-        """
-        self.source_radio_label.config(text="Manually input data to make a prediction.")
-        self.button_execute.config(state='disabled')
-        self.surrounding_cities_select.config(state='disabled')
-        self.button_enter.config(state='disabled')
-
-    def _on_enter_data(self):
-        self.output_window.config(text="This feature has not been implemented yet.")
-
-    def _on_execute(self):
-        import numpy as np
-        model, model_mean, model_std = ForecastingNetwork.get_saved_model()
-        current_weather = WeatherAccess.get_current_weather_at(WeatherAccess.get_cities()[self.target_city_var.get()])
-        current_weather = ForecastingNetwork.scale(current_weather, model_mean, model_std)
-        prediction = model.predict(np.array([current_weather]))[0][0][0]
-        prediction = ForecastingNetwork.unscale(prediction, model_mean['temperature'], model_std['temperature'])
-        self.output(
-"""A trained model has been loaded.
---------
-Based on the parameters used to train the saved model,
-the following is a prediction for the future temperature
-for """ + self.target_city_var.get() + """. The amount of hours 
-into the future is equivalent to that in which the model has been
-trained to.
-
-""" + self.target_city_var.get() + ": "
-+ "%.2f" % DataUtils.kelvin_to_fahrenheit(prediction) + "F"
-        )
+    def test_model(self):
+        pass
 
 
 class TrainMenu(IOMenu):
     def __init__(self, app_frame: tk.Frame):
         super().__init__(app_frame, "Press the button below to begin training:")
-        self.radio_group = tk.IntVar()
-        self.start_year_var = tk.IntVar()
-        self.end_year_var = tk.IntVar()
-        self.source_historic_radio: tk.Radiobutton = None
-        self.source_user_radio: tk.Radiobutton = None
-        self.source_radio_label: tk.Label = None
-        self.start_year_label: tk.Label = None
-        self.start_year_select: tk.OptionMenu = None
-        self.end_year_label: tk.Label = None
-        self.end_year_select: tk.OptionMenu = None
-        self.future_time_entry_label: tk.Label = None
-        self.future_time_entry: tk.Entry = None
+        self.normalization_options = ('Min-Max', 'Two Standardization')
+        self.normalization_selection = tk.StringVar()
+        self.split_type_options = ("Straight Split", "Rolling Split", "Expanding Split")
+        self.split_type_selection = tk.StringVar()
+        self.inputer_options = ("None", "Simple", "Iterative")
+        self.inputer_selection = tk.StringVar()
+        self.inputer_selector_label = tk.Label()
+        self.csv_selector = None
+        self.schema_selector = None
+        self.inputer_selector = None
+        self.split_type_selector = None
+        self.straight_training_slider = None
+        self.straight_validation_slider = None
+        self.rolling_training_size = None
+        self.rolling_validation_size = None
+        self.rolling_testing_size = None
+        self.rolling_gap_size = None
+        self.rolling_stride_size = None
+        self.expanding_training_size = None
+        self.expanding_validation_size = None
+        self.expanding_gap_size = None
+        self.expanding_expansion_rate = None
+        self.normalization_selector = None
+        self.training_features = None
+        self.output_features = None
+        self.input_width = None
+        self.output_width = None
+        self.stride = None
+        self.gap_size = None
+        self.epoch = None
+        self.train_model_button = None
+        self.output_text = None
+        self.save_model_button = None
+        self.input_frame = None
+        self.output_frame = None
+        self.training_csv = None
+        self.training_schema = None
+        self.split_type_selector_label = None
+        self.normalization_selector_label = None
+        self.straight_training_slider_label = None
+        self.straight_validation_slider_label = None
+        self.rolling_training_size_label = None
+        self.rolling_validation_size_label = None
+        self.rolling_testing_size_label = None
+        self.rolling_gap_size_label = None
+        self.rolling_stride_size_label = None
+        self.expanding_training_size_label = None
+        self.expanding_validation_size_label = None
+        self.expanding_gap_size_label = None
+        self.expanding_expansion_rate_label = None
+        self.training_features_label = None
+        self.output_features_label = None
+        self.epoch_label = None
+        self.input_width_label = None
+        self.output_width_label = None
+        self.stride_label = None
+        self.gap_size_label = None
+        self.output_text_label = None
+        self.learning_rate = None
+        self.learning_rate_label = None
 
     def init_ui(self):
         super().init_ui()
-        self.source_historic_radio = tk.Radiobutton(
-            self.left_pane,
-            text="Historic",
-            variable=self.radio_group,
-            value=1,
-            borderwidth=5,
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR,
-            selectcolor='gray',
-            command=self._on_radio_historic
+        self.input_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
+        self.output_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
+        self.csv_selector = tk.Button(
+            self.input_frame,
+            text="Upload CSV",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.upload_csv()
         )
-        self.source_user_radio = tk.Radiobutton(
-            self.left_pane,
-            text="User",
-            variable=self.radio_group,
-            value=2,
-            borderwidth=5,
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR,
-            selectcolor='gray',
-            command=self._on_radio_user
+        self.schema_selector = tk.Button(
+            self.input_frame,
+            text="Upload Model Schema",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.upload_schema()
         )
-        self.source_radio_label = tk.Label(self.left_pane, text="temporary", bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR)
-        self.start_year_label = tk.Label(
-            self.left_pane,
-            text="Select a starting year:",
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR
+        self.inputer_selection.set(self.inputer_options[0])
+        self.inputer_selector = tk.OptionMenu(
+            self.input_frame,
+            self.inputer_selection,
+            *self.inputer_options
         )
-        self.start_year_select = tk.OptionMenu(self.body, self.start_year_var, *WeatherAccess.years)
-        self.end_year_label = tk.Label(
-            self.left_pane,
-            text="Select an ending year:",
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR
+        self.inputer_selector_label = tk.Label(self.input_frame, text="Inputer Type:", bg=BACKGROUND_COLOR,
+                                               fg=FOREGROUND_COLOR, anchor="e")
+        self.split_type_selection.set(self.split_type_options[0])
+        self.split_type_selector = tk.OptionMenu(
+            self.input_frame,
+            self.split_type_selection,
+            *self.split_type_options,
+            command=self.draw_split_type_inputs
         )
-        self.end_year_select = tk.OptionMenu(self.body, self.end_year_var, *WeatherAccess.years)
-        self.future_time_entry_label = tk.Label(
-            self.left_pane,
-            text="Train to hours in future:",
-            bg=BACKGROUND_COLOR,
-            fg=FOREGROUND_COLOR
+        self.split_type_selector_label = tk.Label(self.input_frame, text="Split Type:", bg=BACKGROUND_COLOR,
+                                                  fg=FOREGROUND_COLOR, anchor="e")
+        self.straight_training_slider = tk.Scale(self.input_frame, from_=0, to=100, tickinterval=1,
+                                                 orient=tk.HORIZONTAL)
+        self.straight_training_slider.set(80)
+        self.straight_training_slider_label = tk.Label(self.input_frame, text="Training Percent:", bg=BACKGROUND_COLOR,
+                                                       fg=FOREGROUND_COLOR, anchor="e")
+        self.straight_validation_slider = tk.Scale(self.input_frame, from_=0, to=100, tickinterval=1,
+                                                   orient=tk.HORIZONTAL)
+        self.straight_validation_slider.set(0)
+        self.straight_validation_slider_label = tk.Label(self.input_frame, text="Validation Percent:",
+                                                         bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR, anchor="e")
+        self.rolling_training_size = tk.Text(self.input_frame)
+        self.rolling_training_size.insert(tk.END, '20')
+        self.rolling_training_size_label = tk.Label(self.input_frame, text="Training Size:", bg=BACKGROUND_COLOR,
+                                                    fg=FOREGROUND_COLOR, anchor="e")
+        self.rolling_validation_size = tk.Text(self.input_frame)
+        self.rolling_validation_size.insert(tk.END, '0')
+        self.rolling_validation_size_label = tk.Label(self.input_frame, text="Validation Size:", bg=BACKGROUND_COLOR,
+                                                      fg=FOREGROUND_COLOR, anchor="e")
+        self.rolling_testing_size = tk.Text(self.input_frame)
+        self.rolling_testing_size.insert(tk.END, '10')
+        self.rolling_testing_size_label = tk.Label(self.input_frame, text="Testing Size:", bg=BACKGROUND_COLOR,
+                                                   fg=FOREGROUND_COLOR, anchor="e")
+        self.rolling_gap_size = tk.Text(self.input_frame)
+        self.rolling_gap_size.insert(tk.END, '0')
+        self.rolling_gap_size_label = tk.Label(self.input_frame, text="Gap Size:", bg=BACKGROUND_COLOR,
+                                               fg=FOREGROUND_COLOR, anchor="e")
+        self.rolling_stride_size = tk.Text(self.input_frame)
+        self.rolling_stride_size.insert(tk.END, '1')
+        self.rolling_stride_size_label = tk.Label(self.input_frame, text="Stride Size:", bg=BACKGROUND_COLOR,
+                                                  fg=FOREGROUND_COLOR, anchor="e")
+        self.expanding_training_size = tk.Text(self.input_frame)
+        self.expanding_training_size.insert(tk.END, '20')
+        self.expanding_training_size_label = tk.Label(self.input_frame, text="Training Size:", bg=BACKGROUND_COLOR,
+                                                      fg=FOREGROUND_COLOR, anchor="e")
+        self.expanding_validation_size = tk.Text(self.input_frame)
+        self.expanding_validation_size.insert(tk.END, '0')
+        self.expanding_validation_size_label = tk.Label(self.input_frame, text="Validation Size:", bg=BACKGROUND_COLOR,
+                                                        fg=FOREGROUND_COLOR, anchor="e")
+        self.expanding_gap_size = tk.Text(self.input_frame)
+        self.expanding_gap_size.insert(tk.END, '0')
+        self.expanding_gap_size_label = tk.Label(self.input_frame, text="Gap Size:", bg=BACKGROUND_COLOR,
+                                                 fg=FOREGROUND_COLOR, anchor="e")
+        self.expanding_expansion_rate = tk.Text(self.input_frame)
+        self.expanding_expansion_rate.insert(tk.END, '1')
+        self.expanding_expansion_rate_label = tk.Label(self.input_frame, text="Expansion Rate:", bg=BACKGROUND_COLOR,
+                                                       fg=FOREGROUND_COLOR, anchor="e")
+        self.normalization_selection.set(self.normalization_options[0])
+        self.normalization_selector = tk.OptionMenu(
+            self.input_frame,
+            self.normalization_selection,
+            *self.normalization_options
         )
-        self.future_time_entry = tk.Entry(self.body)
-        self.source_historic_radio.select()
-        self.source_historic_radio.invoke()
-        self.button_execute.config(command=self._on_execute)
+        self.normalization_selector_label = tk.Label(self.input_frame, text="Normalization Type:",
+                                                     bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR, anchor="e")
+        self.training_features = tk.Listbox(self.input_frame)
+        self.training_features_label = tk.Label(self.input_frame, text="Training Features:", bg=BACKGROUND_COLOR,
+                                                fg=FOREGROUND_COLOR, anchor="e")
+        self.output_features = tk.Listbox(self.input_frame)
+        self.output_features_label = tk.Label(self.input_frame, text="Output Features:", bg=BACKGROUND_COLOR,
+                                              fg=FOREGROUND_COLOR, anchor="e")
+        self.input_width = tk.Text(self.input_frame)
+        self.input_width.insert(tk.END, '3')
+        self.input_width_label = tk.Label(self.input_frame, text="Input Width:", bg=BACKGROUND_COLOR,
+                                          fg=FOREGROUND_COLOR, anchor="e")
+        self.output_width = tk.Text(self.input_frame)
+        self.output_width.insert(tk.END, '1')
+        self.output_width_label = tk.Label(self.input_frame, text="Output Width:", bg=BACKGROUND_COLOR,
+                                           fg=FOREGROUND_COLOR, anchor="e")
+        self.stride = tk.Text(self.input_frame)
+        self.stride.insert(tk.END, '1')
+        self.stride_label = tk.Label(self.input_frame, text="Stride Size:", bg=BACKGROUND_COLOR,
+                                     fg=FOREGROUND_COLOR, anchor="e")
+        self.gap_size = tk.Text(self.input_frame)
+        self.gap_size.insert(tk.END, '0')
+        self.gap_size_label = tk.Label(self.input_frame, text="Gap Size:", bg=BACKGROUND_COLOR,
+                                       fg=FOREGROUND_COLOR, anchor="e")
+        self.epoch = tk.Text(self.input_frame)
+        self.epoch.insert(tk.END, '30')
+        self.epoch_label = tk.Label(self.input_frame, text="Epoch:", bg=BACKGROUND_COLOR,
+                                    fg=FOREGROUND_COLOR, anchor="e")
+        self.learning_rate = tk.Text(self.input_frame)
+        self.learning_rate.insert(tk.END, '0.0001')
+        self.learning_rate_label = tk.Label(self.input_frame, text="Learning Rate:", bg=BACKGROUND_COLOR,
+                                            fg=FOREGROUND_COLOR, anchor="e")
+        self.train_model_button = tk.Button(
+            self.input_frame,
+            text="Train Model",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.train_model()
+        )
+        self.output_text = tk.Label(self.output_frame)
+        self.output_text_label = tk.Label(self.output_frame, text="Output:", bg=BACKGROUND_COLOR, fg=FOREGROUND_COLOR)
+        self.save_model_button = tk.Button(
+            self.input_frame,
+            text="Save Model",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.save_model()
+        )
 
     def draw(self):
-        super().draw()
-        label_height = self.get_label_height()
-        self.source_historic_radio.place(x=_ALIGN_X, y=_ALIGN_Y + label_height)
-        radio_width = self.source_historic_radio.winfo_reqwidth()
-        self.source_user_radio.place(x=_ALIGN_X + radio_width + 5, y=_ALIGN_Y + label_height)
-        self.source_radio_label.place(x=_ALIGN_X, y=_ALIGN_Y * 7)
-        self.start_year_label.place(x=_ALIGN_X, y=_ALIGN_Y * 7 + label_height + 5)
-        year_label_width = self.start_year_label.winfo_reqwidth()
-        self.end_year_label.place(x=_ALIGN_X + year_label_width + 5, y=_ALIGN_Y * 7 + label_height + 5)
-        self.start_year_select.place(x=_ALIGN_X, y=_ALIGN_Y * 10 + label_height + 5)
-        self.end_year_select.place(x=_ALIGN_X + year_label_width + 5, y=_ALIGN_Y * 10 + label_height + 5)
-        year_select_height = self.end_year_select.winfo_reqheight()
-        self.future_time_entry_label.place(x=_ALIGN_X, y=_ALIGN_Y * 15 + year_select_height + 5)
-        self.future_time_entry.place(
-            x=_ALIGN_X + self.future_time_entry_label.winfo_reqwidth() + 5,
-            y=_ALIGN_Y * 15 + year_select_height + 5,
-            width=50
-        )
+        Menu.draw(self)
+        self.input_frame.place(relx=0, rely=0, relwidth=1, relheight=.8)
+        self.output_frame.place(relx=0, rely=.8, relwidth=1, relheight=.2)
+        self.csv_selector.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 5, width=150)
+        self.schema_selector.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 5, width=150)
+        self.inputer_selector_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 45, width=100)
+        self.inputer_selector.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 45, width=100)
+        self.split_type_selector_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 45, width=100)
+        self.split_type_selector.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 45, width=150)
+        self.normalization_selector_label.place(x=_ALIGN_X + 655, y=_ALIGN_Y + 45, width=110)
+        self.normalization_selector.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 45, width=150)
+        self.training_features_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 165, width=100)
+        self.training_features.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 165, height=100, width=200)
+        self.output_features_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 165, width=100)
+        self.output_features.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 165, height=100, width=200)
+        self.epoch_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 165, width=100)
+        self.epoch.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 165, height=25, width=200)
+        self.learning_rate_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 205, width=100)
+        self.learning_rate.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 205, height=25, width=200)
+        self.input_width_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 280, width=100)
+        self.input_width.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 280, height=25, width=200)
+        self.output_width_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 280, width=100)
+        self.output_width.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 280, height=25, width=200)
+        self.stride_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 320, width=100)
+        self.stride.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 320, height=25, width=200)
+        self.gap_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 320, width=100)
+        self.gap_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 320, height=25, width=200)
+        self.train_model_button.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 360, width=150)
+        self.save_model_button.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 360, width=150)
+        self.output_text_label.place(x=_ALIGN_X + 5)
+        self.output_text.place(x=_ALIGN_X + 10, relx=.05, rely=.05, relwidth=.9, relheight=.9)
+        self.draw_split_type_inputs(self.split_type_options[0])
 
     def hide(self):
-        super().hide()
-        self.source_historic_radio.destroy()
-        self.source_user_radio.destroy()
-        self.source_radio_label.destroy()
-        self.start_year_label.destroy()
-        self.start_year_select.destroy()
-        self.end_year_label.destroy()
-        self.end_year_select.destroy()
-        self.future_time_entry_label.destroy()
-        self.future_time_entry.destroy()
+        Menu.hide(self)
 
-    def _on_radio_historic(self):
-        self.source_radio_label.config(text="This option uses historic data to train the model.")
-        self.button_execute.config(state="normal")
-        self.surrounding_cities_select.config(state="normal")
-        self.target_city_select.config(state="normal")
-        self.start_year_var.set(WeatherAccess.get_years()[0])
-        self.end_year_var.set(WeatherAccess.get_years()[1])
+    def draw_split_type_inputs(self, selection):
+        self.straight_validation_slider.place_forget()
+        self.straight_training_slider.place_forget()
+        self.rolling_gap_size.place_forget()
+        self.rolling_testing_size.place_forget()
+        self.rolling_validation_size.place_forget()
+        self.rolling_training_size.place_forget()
+        self.rolling_stride_size.place_forget()
+        self.expanding_gap_size.place_forget()
+        self.expanding_training_size.place_forget()
+        self.expanding_validation_size.place_forget()
+        self.expanding_expansion_rate.place_forget()
+        self.straight_validation_slider_label.place_forget()
+        self.straight_training_slider_label.place_forget()
+        self.rolling_gap_size_label.place_forget()
+        self.rolling_testing_size_label.place_forget()
+        self.rolling_validation_size_label.place_forget()
+        self.rolling_training_size_label.place_forget()
+        self.rolling_stride_size_label.place_forget()
+        self.expanding_gap_size_label.place_forget()
+        self.expanding_training_size_label.place_forget()
+        self.expanding_validation_size_label.place_forget()
+        self.expanding_expansion_rate_label.place_forget()
+        if selection == self.split_type_options[0]:
+            self.straight_training_slider_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 85, width=100)
+            self.straight_training_slider.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 85, width=200, height=40)
+            self.straight_validation_slider_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 85, width=100)
+            self.straight_validation_slider.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 85, width=200, height=40)
+        if selection == self.split_type_options[1]:
+            self.rolling_training_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 85, width=100)
+            self.rolling_training_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 85, width=200, height=25)
+            self.rolling_validation_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 85, width=100)
+            self.rolling_validation_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 85, width=200, height=25)
+            self.rolling_testing_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, width=100)
+            self.rolling_testing_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 125, width=200, height=25)
+            self.rolling_gap_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 125, width=100)
+            self.rolling_gap_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 125, width=200, height=25)
+            self.rolling_stride_size_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 125, width=100)
+            self.rolling_stride_size.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 125, width=200, height=25)
+        if selection == self.split_type_options[2]:
+            self.expanding_training_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 85, width=100)
+            self.expanding_training_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 85, width=200, height=25)
+            self.expanding_validation_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 85, width=100)
+            self.expanding_validation_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 85, width=200, height=25)
+            self.expanding_gap_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, width=100)
+            self.expanding_gap_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 125, width=200, height=25)
+            self.expanding_expansion_rate_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 125, width=100)
+            self.expanding_expansion_rate.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 125, width=200, height=25)
 
-    def _on_radio_user(self):
-        self.source_radio_label.config(text="this feature is currently unavailable.")
-        self.surrounding_cities_select.config(state='disabled')
-        self.target_city_select.config(state='disabled')
+    def save_model(self):
+        training_model_file_types = [('All types(*.*)', '*.*')]
+        file = asksaveasfile(filetypes=training_model_file_types, defaultextention=training_model_file_types)
 
-    def _on_execute(self):
-        self.output("Please wait while the network trains!")
-        data = WeatherAccess.query_historical_data(self.selected_cities, self.start_year, self.end_year)
-        rnn = ForecastingNetwork(data)
-        rnn.train_network(self.hours)
-        self.output(
-"""The network has finished training!
-You may now go to the Test menu to make predictions.
+    def train_model(self):
+        pass
 
-The model has been trained to the following variables:
---------
-Start Year: """ + str(self.start_year) + """
-End Year: """ + str(self.end_year) + """
-Hours into the Future: """ + str(self.hours) + """
-Example prediction for """ + self.target_city_var.get() + ": "
-+ "%.2f" % DataUtils.kelvin_to_fahrenheit(rnn.get_example_predictions()[0]) + "F"
+    def generate_training_and_output_features(self):
+        self.training_features.delete(0, tk.END)
+        self.output_features.delete(0, tk.END)
+        for i in self.training_csv:
+            self.training_features.insert(tk.END, self.training_csv[i].name)
+        for i in self.training_csv:
+            self.output_features.insert(tk.END, self.training_csv[i].name)
+
+    def upload_csv(self):
+        new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
+        if new_data is not None:
+            self.training_csv = pd.read_csv(new_data)
+            self.generate_training_and_output_features()
+
+    def upload_schema(self):
+        new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
+        if new_data is not None:
+            self.training_schema = pd.read_csv(new_data)
+
+
+class ClimateChangeMenu(Menu):
+    def __init__(self, app_frame: tk.Frame):
+        Menu.__init__(self, app_frame)
+        self.dates = []
+        self.generate_plot_button = None  # Type: tk.Button
+        self.data_source_table_button = None  # Type: tk.Button
+        self.upload_new_data = None  # Type: tk.Button
+        self.graph_frame = None  # Type: tk.Frame
+        self.tool_frame = None  # Type: tk.Frame
+        self.data_selection_box = None  # Type: tk.Listbox
+        self.source_data = None  # Type: pd.DataFrame
+
+    def init_ui(self):
+        Menu.init_ui(self)
+        self.source_data = ClimateAccess.get_source_data()
+        self.graph_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
+        self.tool_frame = tk.Frame(master=self.body, bg=BACKGROUND_COLOR)
+        self.upload_new_data = tk.Button(
+            self.tool_frame,
+            text="Upload New Data",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.upload_data()
+        )
+        self.generate_plot_button = tk.Button(
+            self.tool_frame,
+            text="Generate Line Graph",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.generate_plot()
+        )
+        self.data_source_table_button = tk.Button(
+            self.tool_frame,
+            text="Show Source Data Explorer",
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
+            command=lambda: self.generate_table()  # Todo: add functionality for this button
+        )
+        self.data_selection_box = tk.Listbox(
+            self.tool_frame,
+            bg=BUTTON_BACKGROUND,
+            fg=BUTTON_FOREGROUND,
         )
 
-    @property
-    def start_year(self):
-        return self.start_year_var.get()
+    def draw(self):
+        Menu.draw(self)
+        self.graph_frame.place(relx=.2, rely=0, relwidth=0.8, relheight=1)
+        self.tool_frame.place(relx=0, rely=0, relwidth=.2, relheight=1)
+        self.generate_plot_button.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 5, relwidth=.9)
+        self.data_source_table_button.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 60, relwidth=.9)
+        self.data_selection_box.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, relwidth=.9, relheight=.6)
+        self.upload_new_data.place(x=_ALIGN_X + 5, rely=.9, relwidth=.9)
+        self.populate_data_picker()
 
-    @property
-    def end_year(self):
-        return self.end_year_var.get()
+    def hide(self):
+        Menu.hide(self)
 
-    @property
-    def hours(self):
-        return self.future_time_entry.get()
+    def generate_plot(self):
+        """
+        Author: Marcus Kline
+        Purpose: plots uploaded data on a 2D line graph. If no data is uploaded then
+                    default data is used instead. This data is generated from https://www.esrl.noaa.gov/gmd/dv/data/
+                    and is included in \\WeatherAI\\data\\mlo_full.csv
+        :return:
+        """
+        for widget in self.graph_frame.winfo_children():
+            widget.destroy()
+        figure = Figure(figsize=(7, 5), dpi=100, constrained_layout=True)
+        plot1 = figure.add_subplot(111)
+        plot1.grid()
+        plot1.set_ylabel(str(self.data_selection_box.get(tk.ACTIVE)))
+        plot1.set_xlabel('Dates')
+        plot1.plot(self.dates, self.source_data[str(self.data_selection_box.get(tk.ACTIVE))])
+        canvas = FigureCanvasTkAgg(figure, master=self.graph_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack()
+        toolbar = NavigationToolbar2Tk(canvas, self.graph_frame)
+        toolbar.update()
+
+    def populate_data_picker(self):
+        """
+        Author: Marcus Kline
+        Purpose: Populates the data picker text field with columns from the data source.
+        :return:
+        """
+        self.data_selection_box.delete(0, tk.END)
+        self.dates = self.source_data[['date']]
+        for i in self.source_data:
+            self.data_selection_box.insert(tk.END, self.source_data[i].name)
+        self.data_selection_box.delete(0)
+
+    def generate_table(self):
+        """
+        Author: Marcus Kline
+        Purpose: generates a table of the uploaded data on a 2D line graph. If no data is uploaded then
+                        default data is used instead. This data is generated from https://www.esrl.noaa.gov/gmd/dv/data/
+                        and is included in \\WeatherAI\\data\\mlo_full.csv
+        :return:
+        """
+        for widget in self.graph_frame.winfo_children():
+            widget.destroy()
+        table = Table(self.graph_frame, dataframe=self.source_data, showtoolbar=True, showstatusbar=True)
+        table.show()
+        table.redraw()
+
+    def upload_data(self):
+        new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
+        if new_data is not None:
+            self.source_data = pd.read_csv(new_data, parse_dates=True)
+            self.populate_data_picker()
 
 
 class AppWindow:

@@ -44,8 +44,8 @@
 
 |    For the sake of this project, only data from the Global Monitoring Laboratory has been considered thus far. Future
      work on this system may want to consider data from the other laboratories. Current implementation only focuses on
-     atmospheric data in respect to climate change. The other laboratories may be able to provide different data in
-     respect to climate change. Additionally, the Global Monitoring Laboratory provides many different research sites
+     atmospheric data in respect to modeling change. The other laboratories may be able to provide different data in
+     respect to modeling change. Additionally, the Global Monitoring Laboratory provides many different research sites
      that provide data aside from atmospheric data. For more information, please check the research site explorer. A list
      of sites and what kind of data they provide will be listed there. A more comprehensive list of every single dataset
      provided by the Global Monitoring Laboratory is listed in the dataset explorer.
