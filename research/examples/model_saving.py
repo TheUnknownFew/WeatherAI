@@ -27,17 +27,18 @@ def write_model():
     ])
 
     model = tf.keras.models.Sequential([
-        layers.LSTM(32),
-        layers.Dense(1)
+        layers.LSTM(32)
     ])
-    model.compile('adam', loss='mean_squared_error', metrics=['mae'])
-    # model.save('my_model.h5')
-    model.fit([[[1., 2., 3.]], [[4., 5., 6.]], [[7., 8., 9.]]], [4., 5., 6.])
-    print(model.to_json())
     with open('model.json', 'w') as f:
         json.dump(json.loads(model.to_json()), f, indent=4)
-    model.summary()
-    plot_model(model, 'test_net.png', show_shapes=True)
+    with open('model.json', 'r') as f:
+        model2 = tf.keras.models.model_from_json(f.read())
+    model2.add(layers.Dense(1))
+    model2.compile('adam', loss='mean_squared_error', metrics=['mae'])
+    # # model.save('my_model.h5')
+    model2.fit([[[1., 2., 3.]], [[4., 5., 6.]], [[7., 8., 9.]]], [4., 5., 6.])
+    model2.summary()
+    plot_model(model2, 'test_net.png', show_shapes=True)
     # model = Sequential()
     # model.add(layers.LSTM(50, activation='relu', input_shape=(3, 1)))
     # model.add(layers.Dense(1))

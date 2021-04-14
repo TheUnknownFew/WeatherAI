@@ -48,8 +48,9 @@ class SampleSet:
         :param labels:
         :return:
         """
+        multi_featured = len(labels) > 1 or len(labels.columns) > 1
         self.__inputs = np.array([sample.to_numpy()])
-        label_set = [labels.to_numpy()] if len(labels) > 1 or len(labels.columns) > 1 else labels.to_numpy().flatten()
+        label_set = np.array([labels.to_numpy()]) if multi_featured else labels.to_numpy().flatten()
         self.__labels = label_set
         self.__append = self.__append_sample
 
@@ -60,8 +61,9 @@ class SampleSet:
         :param labels:
         :return:
         """
+        multi_featured = len(labels) > 1 or len(labels.columns) > 1
         self.__inputs = np.concatenate((self.__inputs, [sample.to_numpy()]))
-        label_set = [labels.to_numpy()] if len(labels) > 1 or len(labels.columns) > 1 else labels.to_numpy().flatten()
+        label_set = np.array([labels.to_numpy()]) if multi_featured else labels.to_numpy().flatten()
         self.__labels = np.concatenate((self.__labels, label_set))
 
     @property
@@ -88,8 +90,9 @@ class SampleSet:
 
 
 class TimeseriesData:
-    def __init__(self, output_cols: List[str]):
+    def __init__(self, output_cols: List[str], num_steps: int):
         self.out_cols: List[str] = output_cols
+        self.num_steps: int = num_steps
         self.training_samples: SampleSet = SampleSet()
         self.validation_samples: SampleSet = SampleSet()
         self.test_samples: SampleSet = SampleSet()
@@ -298,7 +301,7 @@ class SupervisedTimeseriesTransformer:
         return [self.__make_timeseries_samples(split) for split in splits]
 
     def __make_timeseries_samples(self, split: DataSplit) -> TimeseriesData:
-        series = TimeseriesData(self.output_columns)
+        series = TimeseriesData(self.output_columns, self.width_out)
         self.__make_samples(split.parent_data, split.train_split, series.training_samples)
         self.__make_samples(split.parent_data, split.validation_split, series.validation_samples)
         self.__make_samples(split.parent_data, split.test_split, series.test_samples, True)
@@ -324,15 +327,25 @@ class SupervisedTimeseriesTransformer:
             sample_set.append_sample(sample, labels)
 
 
-class ForecastModeler:
+class ForecastModelTrainer:
     def __init__(self, path_to_model: str):
-        self.model: tf.keras.Model = tf.keras.models.load_model(path_to_model)
-        self.is_trained: bool = path_to_model.endswith('.h5')
+        with open(path_to_model, 'r') as f:
+            self.model: tf.keras.Model = tf.keras.models.model_from_json(f.read())
 
-    def __call__(self, sample_set: List[TimeseriesData], epochs=10, learning_rate=0.001):
-        if not self.is_trained:
-            self.model.compile(optimizer=tf.optimizers.Adam(learning_rate=learning_rate))
-
+    def __call__(self,
+                 sample_set: List[TimeseriesData],
+                 epochs=10,
+                 learning_rate=0.001,
+                 callbacks: List[tf.keras.callbacks.Callback] = None) -> tf.keras.Model:
+        num_features = len(sample_set[0].out_cols)
+        steps_out = sample_set[0].num_steps
+        output_layer = tf.keras.layers.Dense(units=num_features * steps_out)
+        self.model.add(output_layer)
+        if steps_out > 1:
+            self.model.add(tf.keras.layers.Reshape([steps_out, num_features]))
+        self.model.compile(optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
+                           loss=['mae', 'mse'],
+                           metrics=['mae', 'accuracy', 'cosine_similarity'])
         for samples in sample_set:
             val_set = (samples.validation_samples.samples, samples.validation_samples.labels) \
                 if len(samples.validation_samples.samples) > 0 else None
@@ -340,9 +353,18 @@ class ForecastModeler:
                 samples.training_samples.samples,
                 samples.training_samples.labels,
                 epochs=epochs,
-                validation_data=val_set
+                validation_data=val_set,
+                callbacks=callbacks
             )
         return self.model
+
+
+class ModelEvaluationReporter:
+    def __init__(self, trained_model: tf.keras.Model):
+        self.model: tf.keras.Model = trained_model
+
+    def __call__(self, sample_set: List[TimeseriesData]) -> str:
+        return 'Yet to be implemented!'
 
 
 # File Selector : csv file -> Training
