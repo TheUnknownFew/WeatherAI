@@ -187,6 +187,7 @@ class TrainMenu(MenuWindow):
         self.schema_selection_label = None
         self.path_to_csv = None
         self.model_fit_reporter: ModelEvaluationReporter = None
+        self.cancel_button = None
 
     def init_ui(self):
         super().init_ui()
@@ -325,6 +326,13 @@ class TrainMenu(MenuWindow):
             bg=ui.BUTTON_BACKGROUND,
             fg=ui.BUTTON_FOREGROUND,
             command=lambda: self.train_model()
+        )
+        self.cancel_button = tk.Button(
+            self.input_frame,
+            text="Cancel Training",
+            bg=ui.BUTTON_BACKGROUND,
+            fg=ui.BUTTON_FOREGROUND,
+            command=lambda: self.cancel_training_model()
         )
         self.output_text = OutputWindow(self.output_frame)
         self.output_text.init_ui()
@@ -465,7 +473,9 @@ class TrainMenu(MenuWindow):
         self.save_model_button.place(x=ui.ALIGN_X + ui.RIGHT_BUTTON_ALIGNMENT_OFFSET,
                                      y=ui.ALIGN_Y + (ui.Y_ELEMENT_OFFSET * 8),
                                      width=150)
-
+        self.cancel_button.place(x=ui.ALIGN_X + ui.LEFT_BUTTON_ALIGNMENT_OFFSET,
+                                 y=ui.ALIGN_Y + (ui.Y_ELEMENT_OFFSET * 9),
+                                 width=150)
         self.output_text_label.place(x=ui.ALIGN_X + 5)
         self.output_text.draw(x=ui.ALIGN_X + 10, relx=.05, rely=.05, relwidth=.9, relheight=.9)
         self.draw_split_type_inputs(self.split_type_options[0])
@@ -526,6 +536,7 @@ class TrainMenu(MenuWindow):
         self.expanding_validation_size_label.destroy()
         self.expanding_testing_size_label.destroy()
         self.expanding_expansion_rate_label.destroy()
+        self.cancel_button.destroy()
 
     def draw_split_type_inputs(self, selection):
         """
@@ -749,6 +760,9 @@ class TrainMenu(MenuWindow):
                                        f'Model Performance:\n'
                                        f'{report}')
 
+    def cancel_training_model(self):
+        pass
+
     def generate_training_and_output_features(self):
         """
         Author: Marcus Kline
@@ -841,10 +855,14 @@ class ClimateChangeMenu(MenuWindow):
         MenuWindow.draw(self)
         self.graph_frame.place(relx=.2, rely=0, relwidth=0.8, relheight=1)
         self.tool_frame.place(relx=0, rely=0, relwidth=.2, relheight=1)
-        self.generate_plot_button.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 5, relwidth=.9)
-        self.data_source_table_button.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 60, relwidth=.9)
-        self.data_selection_box.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 125, relwidth=.9, relheight=.6)
-        self.upload_new_data.place(x=ui.ALIGN_X + 5, rely=.9, relwidth=.9)
+        self.upload_new_data.place(x=ui.ALIGN_X, y=ui.ALIGN_Y, width=200)
+        self.data_selection_box.place(x=ui.ALIGN_X, y=ui.ALIGN_Y + ui.Y_ELEMENT_OFFSET, width=200, height=385)
+        self.data_source_table_button.place(x=ui.ALIGN_X, y=ui.ALIGN_Y + ui.Y_ELEMENT_OFFSET
+                                            + ui.X_400_UNIT_WIDTH_OFFSET,
+                                            width=200)
+        self.generate_plot_button.place(x=ui.ALIGN_X, y=ui.ALIGN_Y + (ui.Y_ELEMENT_OFFSET * 2)
+                                        + ui.X_400_UNIT_WIDTH_OFFSET,
+                                        width=200)
         self.populate_data_picker()
 
     def hide(self):
@@ -861,14 +879,19 @@ class ClimateChangeMenu(MenuWindow):
         for widget in self.graph_frame.winfo_children():
             widget.destroy()
         figure = Figure(figsize=(7, 5), dpi=100, constrained_layout=True)
-        plot1 = figure.add_subplot(111)
-        plot1.grid()
+        source_data_plot = figure.add_subplot(111)
+        source_data_plot.grid()
         selected_data = [self.data_selection_box.get(i) for i in self.data_selection_box.curselection()]
-        plot1.set_ylabel(','.join(map(str, selected_data)))
-        plot1.set_xlabel('Dates')
-        for field in selected_data:
-            plot1.plot(self.dates, self.source_data[field])
-        plot1.legend(selected_data, loc='upper right')
+        source_data_plot.set_ylabel(','.join(map(str, selected_data)))
+        if self.dates is not None:
+            source_data_plot.set_xlabel('Dates')
+            for field in selected_data:
+                source_data_plot.plot(self.dates, self.source_data[field])
+        else:
+            source_data_plot.set_xlabel('Index')
+            for field in selected_data:
+                source_data_plot.plot(self.source_data.index, self.source_data[field])
+        source_data_plot.legend(selected_data, loc='upper right')
         canvas = FigureCanvasTkAgg(figure, master=self.graph_frame)
         canvas.draw()
         canvas.get_tk_widget().pack()
@@ -882,7 +905,9 @@ class ClimateChangeMenu(MenuWindow):
         :return:
         """
         self.data_selection_box.delete(0, tk.END)
-        self.dates = self.source_data[['date']]
+        self.dates = None
+        if 'date' in self.source_data.columns:
+            self.dates = self.source_data[['date']]
         for i in self.source_data:
             self.data_selection_box.insert(tk.END, self.source_data[i].name)
         self.data_selection_box.delete(0)

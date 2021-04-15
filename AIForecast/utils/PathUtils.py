@@ -65,16 +65,16 @@ class PathUtils:
     def file_exists(file_path: str) -> bool:
         return os.path.isfile(file_path)
 
-    @staticmethod
-    def get_owm_apikey() -> str:
-        """
-        Returns the Open Weather Map key used to access openweathermap.orc
-        Though this function is public, it should be treated as a private function since
-        an OWM object can be accessed by importing utils owm_access.
-        'from utils import owm_access'
-        """
-        key_path = osp.join(FolderStructure.ROOT_DIR.get_path(), PathUtils._API_KEY_FILE).replace('\\', os.path.sep)
-        key_file = open(key_path, 'r')
-        api_key = key_file.readline()
-        key_file.close()
-        return api_key
+    # @staticmethod
+    # def get_owm_apikey() -> str:
+    #     """
+    #     Returns the Open Weather Map key used to access openweathermap.orc
+    #     Though this function is public, it should be treated as a private function since
+    #     an OWM object can be accessed by importing utils owm_access.
+    #     'from utils import owm_access'
+    #     """
+    #     key_path = osp.join(FolderStructure.ROOT_DIR.get_path(), PathUtils._API_KEY_FILE).replace('\\', os.path.sep)
+    #     key_file = open(key_path, 'r')
+    #     api_key = key_file.readline()
+    #     key_file.close()
+    #     return api_key
