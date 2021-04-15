@@ -2,8 +2,8 @@
 from AIForecast import utils
 import tkinter as tk
 
-from AIForecast.ui.widgets import AppWindow, Menus, MainMenu, TestMenu, TrainMenu, ClimateChangeMenu
-from AIForecast.weather import dataaccess
+from AIForecast.ui.widgets import AppWindow, Menus
+from AIForecast.ui.menus import MainMenu, TestMenu, TrainMenu, ClimateChangeMenu
 
 
 def main():

@@ -29,10 +29,10 @@ def write_model():
     model = tf.keras.models.Sequential([
         layers.LSTM(32)
     ])
-    with open('model.json', 'w') as f:
-        json.dump(json.loads(model.to_json()), f, indent=4)
     with open('model.json', 'r') as f:
         model2 = tf.keras.models.model_from_json(f.read())
+    with open('model.json', 'w') as f:
+        json.dump(json.loads(model.to_json()), f, indent=4)
     model2.add(layers.Dense(1))
     model2.compile('adam', loss='mean_squared_error', metrics=['mae'])
     # # model.save('my_model.h5')
