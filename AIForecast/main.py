@@ -9,8 +9,6 @@ from AIForecast.weather import dataaccess
 def main():
     utils.log(__name__).debug('Starting AI-Weather Forecast!')
 
-    # dataaccess.load_historical_data()
-
     root = tk.Tk()
     root.title("AI-Weather Forecast")
     root.minsize(AppWindow.WINDOW_WIDTH, AppWindow.WINDOW_HEIGHT)

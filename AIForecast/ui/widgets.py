@@ -1,7 +1,8 @@
 import tkinter as tk
 from enum import Enum
-from tkinter import filedialog
+from tkinter import filedialog as fdiag
 from typing import List, Dict
+import os
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ from matplotlib.figure import Figure
 from pandastable import Table
 from tensorflow import keras
 
-from AIForecast import utils
+from AIForecast import utils, sysutils
 from AIForecast.modeling.dataprocessing import DataImputer, StraightSplit, RollingSplit, ExpandingSplit, \
     MinMaxNormalizer, ZStandardizer, SupervisedTimeseriesTransformer, ForecastModelTrainer, ModelEvaluationReporter
 from AIForecast.weather import ClimateAccess
@@ -29,13 +30,36 @@ BUTTON_BACKGROUND = 'white'
 BUTTON_ACTIVE_BACKGROUND = 'gray'
 BUTTON_FOREGROUND = 'black'
 
-_ALIGN_X = 10
-_ALIGN_Y = 10
+"""Offset from the edge of the window"""
+_ALIGN_X = 15
+_ALIGN_Y = 15
+"""Offset used between labels and their respective elements."""
+_LABEL_OFFSET = 5
+"""X Offset for each unit width of elements. 
+Used to add up each element with a specific width in a line"""
+_X_30_UNIT_WIDTH_OFFSET = 30
+_X_75_UNIT_WIDTH_OFFSET = 75
+_X_100_UNIT_WIDTH_OFFSET = 100
+_X_110_UNIT_WIDTH_OFFSET = 110
+_X_150_UNIT_WIDTH_OFFSET = 150
+_X_200_UNIT_WIDTH_OFFSET = 200
+"""The x and y offsets between other elements in a frame"""
+_X_ELEMENT_OFFSET = 15
+_Y_ELEMENT_OFFSET = 40
+"""Alignment offsets used to align certain elements with other elements vertically"""
+_OUTPUT_WIDTH_ALIGNMENT_OFFSET = 20
+_STRIDE_ALIGNMENT_OFFSET = 20
+_TIME_OFFSET_ALIGNMENT_OFFSET = 40
+_EPOCH_LABEL_ALIGNMENT_OFFSET = 50
+_LEFT_BUTTON_ALIGNMENT_OFFSET = 105
+_RIGHT_BUTTON_ALIGNMENT_OFFSET = 435
 
 CSV_FILE_TYPE = '*.csv'
 CSV_FILE_LABEL = 'CSV Files'
 JSON_FILE_TYPE = '*.json'
 JSON_FILE_LABEL = 'JSON Files'
+MODEL_FILE_TYPE = '*.h5'
+MODEL_FILE_LABEL = 'Keras Model Files'
 
 
 class Menus(Enum):
@@ -320,7 +344,12 @@ class TestMenu(Menu):
         super().hide()
 
     def upload_trained_model(self):
-        new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
+        """
+        Author: Marcus Kline
+        Purpose: This function is used to upload an already trained model that would be used to test
+        :return:
+        """
+        new_data = fdiag.askopenfile(mode='r', filetypes=[(MODEL_FILE_LABEL, MODEL_FILE_TYPE)])
         if new_data is not None:
             self.trained_model = pd.read_csv(new_data)
 
@@ -340,8 +369,9 @@ class OutputEpoch(keras.callbacks.Callback):
         progress = int(self.num_prog * (epoch / self.total_epochs))
         bar = f'[{"=" * progress}{"." * (self.num_prog - progress)}]'
         output = f'Your model is being trained. This may take a while.\n' \
-                 f'Epoch {epoch}: {int((epoch / self.total_epochs) * 100)}% {bar}\n' \
-                 f'{logs}\n'
+                 f'Epoch {epoch}: {int((epoch / self.total_epochs) * 100)}% {bar}\n'
+        for metric in [f' - {key}: {val}\n' for key, val in logs.items()]:
+            output += metric
         self.output_window.output(output)
 
 
@@ -354,10 +384,10 @@ class TrainMenu(Menu):
         self.split_type_selection = tk.StringVar()
         self.inputer_options = ("None", "Simple", "Iterative")
         self.inputer_selection = tk.StringVar()
-        self.inputer_selector_label = tk.Label()
+        self.imputer_selector_label = tk.Label()
         self.csv_selector = None
         self.schema_selector = None
-        self.inputer_selector = None
+        self.imputer_selector = None
         self.split_type_selector = None
         self.straight_training_slider = None
         self.straight_validation_slider = None
@@ -406,11 +436,15 @@ class TrainMenu(Menu):
         self.input_width_label = None
         self.output_width_label = None
         self.stride_label = None
-        self.label_offset_label = None
+        self.time_offset_label = None
         self.output_text_label = None
         self.learning_rate = None
         self.learning_rate_label = None
         self.trained_model = None
+        self.csv_selection_label = None
+        self.schema_selection_label = None
+        self.path_to_csv = None
+        self.model_fit_reporter: ModelEvaluationReporter = None
 
     def init_ui(self):
         super().init_ui()
@@ -423,6 +457,9 @@ class TrainMenu(Menu):
             fg=BUTTON_FOREGROUND,
             command=lambda: self.upload_csv()
         )
+        self.csv_selection_label = tk.Label(self.input_frame, text="No File Selected.", bg=BACKGROUND_COLOR,
+                                            fg=FOREGROUND_COLOR, anchor="w"
+                                            )
         self.schema_selector = tk.Button(
             self.input_frame,
             text="Upload Model Schema",
@@ -430,13 +467,16 @@ class TrainMenu(Menu):
             fg=BUTTON_FOREGROUND,
             command=lambda: self.upload_schema()
         )
+        self.schema_selection_label = tk.Label(self.input_frame, text="No File Selected.", bg=BACKGROUND_COLOR,
+                                               fg=FOREGROUND_COLOR, anchor="w"
+                                               )
         self.inputer_selection.set(self.inputer_options[0])
-        self.inputer_selector = tk.OptionMenu(
+        self.imputer_selector = tk.OptionMenu(
             self.input_frame,
             self.inputer_selection,
             *self.inputer_options
         )
-        self.inputer_selector_label = tk.Label(self.input_frame, text="Inputer Type:", bg=BACKGROUND_COLOR,
+        self.imputer_selector_label = tk.Label(self.input_frame, text="Inputer Type:", bg=BACKGROUND_COLOR,
                                                fg=FOREGROUND_COLOR, anchor="e")
         self.split_type_selection.set(self.split_type_options[0])
         self.split_type_selector = tk.OptionMenu(
@@ -527,8 +567,8 @@ class TrainMenu(Menu):
                                      fg=FOREGROUND_COLOR, anchor="e")
         self.time_offset = tk.Text(self.input_frame)
         self.time_offset.insert(tk.END, '1')
-        self.label_offset_label = tk.Label(self.input_frame, text="Time offset:", bg=BACKGROUND_COLOR,
-                                           fg=FOREGROUND_COLOR, anchor="e")
+        self.time_offset_label = tk.Label(self.input_frame, text="Time offset:", bg=BACKGROUND_COLOR,
+                                          fg=FOREGROUND_COLOR, anchor="e")
         self.epoch = tk.Text(self.input_frame)
         self.epoch.insert(tk.END, '30')
         self.epoch_label = tk.Label(self.input_frame, text="Epoch:", bg=BACKGROUND_COLOR,
@@ -559,32 +599,128 @@ class TrainMenu(Menu):
         Menu.draw(self)
         self.input_frame.place(relx=0, rely=0, relwidth=1, relheight=.8)
         self.output_frame.place(relx=0, rely=.8, relwidth=1, relheight=.2)
-        self.csv_selector.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 5, width=150)
-        self.schema_selector.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 5, width=150)
-        self.inputer_selector_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 45, width=100)
-        self.inputer_selector.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 45, width=100)
-        self.split_type_selector_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 45, width=100)
-        self.split_type_selector.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 45, width=150)
-        self.normalization_selector_label.place(x=_ALIGN_X + 655, y=_ALIGN_Y + 45, width=110)
-        self.normalization_selector.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 45, width=150)
-        self.training_features_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 165, width=100)
-        self.training_features.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 165, height=100, width=200)
-        self.output_features_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 165, width=100)
-        self.output_features.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 165, height=100, width=200)
-        self.epoch_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 165, width=100)
-        self.epoch.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 165, height=25, width=200)
-        self.learning_rate_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 205, width=100)
-        self.learning_rate.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 205, height=25, width=200)
-        self.input_width_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 280, width=100)
-        self.input_width.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 280, height=25, width=200)
-        self.output_width_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 280, width=100)
-        self.output_width.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 280, height=25, width=200)
-        self.stride_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 320, width=100)
-        self.stride.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 320, height=25, width=200)
-        self.label_offset_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 320, width=100)
-        self.time_offset.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 320, height=25, width=200)
-        self.train_model_button.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 360, width=150)
-        self.save_model_button.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 360, width=150)
+        self.csv_selector.place(x=_ALIGN_X + _LEFT_BUTTON_ALIGNMENT_OFFSET,
+                                y=_ALIGN_Y,
+                                width=150)
+        self.csv_selection_label.place(x=_ALIGN_X + _X_ELEMENT_OFFSET + _X_150_UNIT_WIDTH_OFFSET
+                                         + _LEFT_BUTTON_ALIGNMENT_OFFSET,
+                                       y=_ALIGN_Y,
+                                       width=200)
+        self.schema_selector.place(x=_ALIGN_X + _RIGHT_BUTTON_ALIGNMENT_OFFSET,
+                                   y=_ALIGN_Y,
+                                   width=150)
+        self.schema_selection_label.place(x=_ALIGN_X + _X_ELEMENT_OFFSET + _X_150_UNIT_WIDTH_OFFSET
+                                            + _RIGHT_BUTTON_ALIGNMENT_OFFSET,
+                                          y=_ALIGN_Y,
+                                          width=200)
+        self.imputer_selector_label.place(x=_ALIGN_X,
+                                          y=_ALIGN_Y + _Y_ELEMENT_OFFSET,
+                                          width=100)
+        self.imputer_selector.place(x=_ALIGN_X + _LABEL_OFFSET + _X_100_UNIT_WIDTH_OFFSET,
+                                    y=_ALIGN_Y + _Y_ELEMENT_OFFSET,
+                                    width=100)
+        self.split_type_selector_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                               + (_X_100_UNIT_WIDTH_OFFSET * 2),
+                                             y=_ALIGN_Y + _Y_ELEMENT_OFFSET,
+                                             width=100)
+        self.split_type_selector.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                         + (_X_100_UNIT_WIDTH_OFFSET * 3),
+                                       y=_ALIGN_Y + _Y_ELEMENT_OFFSET,
+                                       width=150)
+        self.normalization_selector_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + (_X_ELEMENT_OFFSET * 2)
+                                                  + (_X_100_UNIT_WIDTH_OFFSET * 3)
+                                                  + _X_150_UNIT_WIDTH_OFFSET,
+                                                y=_ALIGN_Y + _Y_ELEMENT_OFFSET,
+                                                width=110)
+        self.normalization_selector.place(x=_ALIGN_X + (_LABEL_OFFSET * 3) + (_X_ELEMENT_OFFSET * 2)
+                                            + (_X_100_UNIT_WIDTH_OFFSET * 3)
+                                            + _X_150_UNIT_WIDTH_OFFSET + _X_110_UNIT_WIDTH_OFFSET,
+                                          y=_ALIGN_Y + _Y_ELEMENT_OFFSET,
+                                          width=150)
+        self.training_features_label.place(x=_ALIGN_X,
+                                           y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 4),
+                                           width=100)
+        self.training_features.place(x=_ALIGN_X + _LABEL_OFFSET + _X_100_UNIT_WIDTH_OFFSET,
+                                     y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 4),
+                                     height=100, width=200)
+        self.output_features_label.place(x=_ALIGN_X + _LABEL_OFFSET + _X_ELEMENT_OFFSET
+                                           + _X_100_UNIT_WIDTH_OFFSET
+                                           + _X_200_UNIT_WIDTH_OFFSET,
+                                         y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 4),
+                                         width=100)
+        self.output_features.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                     + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                     + _X_200_UNIT_WIDTH_OFFSET,
+                                   y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 4),
+                                   height=100, width=200)
+        self.input_width_label.place(x=_ALIGN_X,
+                                     y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                                     width=100)
+        self.input_width.place(x=_ALIGN_X + _LABEL_OFFSET + _X_100_UNIT_WIDTH_OFFSET,
+                               y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                               height=25, width=30)
+        self.output_width_label.place(x=_ALIGN_X + _LABEL_OFFSET + _X_ELEMENT_OFFSET + _OUTPUT_WIDTH_ALIGNMENT_OFFSET
+                                        + _X_30_UNIT_WIDTH_OFFSET
+                                        + _X_100_UNIT_WIDTH_OFFSET,
+                                      y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                                      width=100)
+        self.output_width.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET + _OUTPUT_WIDTH_ALIGNMENT_OFFSET
+                                  + _X_30_UNIT_WIDTH_OFFSET
+                                  + (_X_100_UNIT_WIDTH_OFFSET * 2),
+                                y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                                height=25, width=30)
+        self.stride_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + (_X_ELEMENT_OFFSET * 2) + _STRIDE_ALIGNMENT_OFFSET
+                                  + (_X_30_UNIT_WIDTH_OFFSET * 2)
+                                  + (_X_100_UNIT_WIDTH_OFFSET * 2),
+                                y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                                width=100)
+        self.stride.place(x=_ALIGN_X + (_LABEL_OFFSET * 3) + (_X_ELEMENT_OFFSET * 2) + _STRIDE_ALIGNMENT_OFFSET
+                            + (_X_30_UNIT_WIDTH_OFFSET * 2)
+                            + (_X_100_UNIT_WIDTH_OFFSET * 3),
+                          y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                          height=25, width=30)
+        self.time_offset_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 3) + (_X_ELEMENT_OFFSET * 3)
+                                       + _TIME_OFFSET_ALIGNMENT_OFFSET
+                                       + (_X_30_UNIT_WIDTH_OFFSET * 3)
+                                       + (_X_100_UNIT_WIDTH_OFFSET * 3),
+                                     y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                                     width=100)
+        self.time_offset.place(x=_ALIGN_X + (_LABEL_OFFSET * 4) + (_X_ELEMENT_OFFSET * 3)
+                                 + _TIME_OFFSET_ALIGNMENT_OFFSET
+                                 + (_X_30_UNIT_WIDTH_OFFSET * 3)
+                                 + (_X_100_UNIT_WIDTH_OFFSET * 4),
+                               y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                               height=25, width=30)
+        self.epoch_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 4) + (_X_ELEMENT_OFFSET * 4)
+                                 + _EPOCH_LABEL_ALIGNMENT_OFFSET
+                                 + (_X_30_UNIT_WIDTH_OFFSET * 4)
+                                 + (_X_100_UNIT_WIDTH_OFFSET * 4),
+                               y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                               width=50)
+        self.epoch.place(x=_ALIGN_X + (_LABEL_OFFSET * 5) + (_X_ELEMENT_OFFSET * 4)
+                           + (_X_30_UNIT_WIDTH_OFFSET * 4)
+                           + (_X_100_UNIT_WIDTH_OFFSET * 5),
+                         y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                         height=25, width=75)
+        self.learning_rate_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 5) + (_X_ELEMENT_OFFSET * 5)
+                                         + (_X_30_UNIT_WIDTH_OFFSET * 4)
+                                         + (_X_100_UNIT_WIDTH_OFFSET * 5)
+                                         + _X_75_UNIT_WIDTH_OFFSET,
+                                       y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                                       width=100)
+        self.learning_rate.place(x=_ALIGN_X + (_LABEL_OFFSET * 6) + (_X_ELEMENT_OFFSET * 5)
+                                   + (_X_30_UNIT_WIDTH_OFFSET * 4)
+                                   + (_X_100_UNIT_WIDTH_OFFSET * 6)
+                                   + _X_75_UNIT_WIDTH_OFFSET,
+                                 y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 7),
+                                 height=25, width=75)
+        self.train_model_button.place(x=_ALIGN_X + _LEFT_BUTTON_ALIGNMENT_OFFSET,
+                                      y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 8),
+                                      width=150)
+        self.save_model_button.place(x=_ALIGN_X + _RIGHT_BUTTON_ALIGNMENT_OFFSET,
+                                     y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 8),
+                                     width=150)
+
         self.output_text_label.place(x=_ALIGN_X + 5)
         self.output_text.draw(x=_ALIGN_X + 10, relx=.05, rely=.05, relwidth=.9, relheight=.9)
         self.draw_split_type_inputs(self.split_type_options[0])
@@ -595,8 +731,8 @@ class TrainMenu(Menu):
         self.output_frame.destroy()
         self.csv_selector.destroy()
         self.schema_selector.destroy()
-        self.inputer_selector_label.destroy()
-        self.inputer_selector.destroy()
+        self.imputer_selector_label.destroy()
+        self.imputer_selector.destroy()
         self.split_type_selector_label.destroy()
         self.split_type_selector.destroy()
         self.normalization_selector_label.destroy()
@@ -615,7 +751,7 @@ class TrainMenu(Menu):
         self.output_width.destroy()
         self.stride_label.destroy()
         self.stride.destroy()
-        self.label_offset_label.destroy()
+        self.time_offset_label.destroy()
         self.time_offset.destroy()
         self.train_model_button.destroy()
         self.save_model_button.destroy()
@@ -647,6 +783,14 @@ class TrainMenu(Menu):
         self.expanding_expansion_rate_label.destroy()
 
     def draw_split_type_inputs(self, selection):
+        """
+        Author: Marcus Kline
+        Purpose: Depending on which type of split type is selected, a different set of input data will need to be
+        collected. This function will clear the frame of any existing input fields populated by this function and
+        then populate specific input fields based on the selected split type.
+        :param selection: Automatically filled with the selection made when split type OptionMenu is changed
+        :return:
+        """
         self.straight_validation_slider.place_forget()
         self.straight_training_slider.place_forget()
         self.rolling_gap_size.place_forget()
@@ -672,41 +816,133 @@ class TrainMenu(Menu):
         self.expanding_testing_size_label.place_forget()
         self.expanding_expansion_rate_label.place_forget()
         if selection == self.split_type_options[0]:
-            self.straight_training_slider_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 85, width=100)
-            self.straight_training_slider.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 85, width=200, height=40)
-            self.straight_validation_slider_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 85, width=100)
-            self.straight_validation_slider.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 85, width=200, height=40)
+            self.straight_training_slider_label.place(x=_ALIGN_X,
+                                                      y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                      width=100)
+            self.straight_training_slider.place(x=_ALIGN_X + _LABEL_OFFSET + _X_100_UNIT_WIDTH_OFFSET,
+                                                y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                width=200, height=40)
+            self.straight_validation_slider_label.place(x=_ALIGN_X + _LABEL_OFFSET + _X_ELEMENT_OFFSET
+                                                          + _X_100_UNIT_WIDTH_OFFSET
+                                                          + _X_200_UNIT_WIDTH_OFFSET,
+                                                        y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                        width=100)
+            self.straight_validation_slider.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                                    + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                                    + _X_200_UNIT_WIDTH_OFFSET,
+                                                  y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                  width=200, height=40)
         if selection == self.split_type_options[1]:
-            self.rolling_training_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 85, width=100)
-            self.rolling_training_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 85, width=200, height=25)
-            self.rolling_validation_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 85, width=100)
-            self.rolling_validation_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 85, width=200, height=25)
-            self.rolling_testing_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, width=100)
-            self.rolling_testing_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 125, width=200, height=25)
-            self.rolling_gap_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 125, width=100)
-            self.rolling_gap_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 125, width=200, height=25)
-            self.rolling_stride_size_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 125, width=100)
-            self.rolling_stride_size.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 125, width=200, height=25)
+            self.rolling_training_size_label.place(x=_ALIGN_X,
+                                                   y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                   width=100)
+            self.rolling_training_size.place(x=_ALIGN_X + _LABEL_OFFSET + _X_100_UNIT_WIDTH_OFFSET,
+                                             y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                             width=200, height=25)
+            self.rolling_validation_size_label.place(x=_ALIGN_X + _LABEL_OFFSET + _X_ELEMENT_OFFSET
+                                                       + _X_100_UNIT_WIDTH_OFFSET
+                                                       + _X_200_UNIT_WIDTH_OFFSET,
+                                                     y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                     width=100)
+            self.rolling_validation_size.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                                 + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                                 + _X_200_UNIT_WIDTH_OFFSET,
+                                               y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                               width=200, height=25)
+            self.rolling_testing_size_label.place(x=_ALIGN_X,
+                                                  y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                                  width=100)
+            self.rolling_testing_size.place(x=_ALIGN_X + _LABEL_OFFSET + _X_100_UNIT_WIDTH_OFFSET,
+                                            y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                            width=200, height=25)
+            self.rolling_gap_size_label.place(x=_ALIGN_X + _LABEL_OFFSET + _X_ELEMENT_OFFSET
+                                                + _X_100_UNIT_WIDTH_OFFSET
+                                                + _X_200_UNIT_WIDTH_OFFSET,
+                                              y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                              width=100)
+            self.rolling_gap_size.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                          + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                          + _X_200_UNIT_WIDTH_OFFSET,
+                                        y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                        width=200, height=25)
+            self.rolling_stride_size_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + (_X_ELEMENT_OFFSET * 2)
+                                                   + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                                   + (_X_200_UNIT_WIDTH_OFFSET * 2),
+                                                 y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                                 width=100)
+            self.rolling_stride_size.place(x=_ALIGN_X + (_LABEL_OFFSET * 3) + (_X_ELEMENT_OFFSET * 2)
+                                             + (_X_100_UNIT_WIDTH_OFFSET * 3)
+                                             + (_X_200_UNIT_WIDTH_OFFSET * 2),
+                                           y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                           width=200, height=25)
         if selection == self.split_type_options[2]:
-            self.expanding_training_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 85, width=100)
-            self.expanding_training_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 85, width=200, height=25)
-            self.expanding_validation_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 85, width=100)
-            self.expanding_validation_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 85, width=200, height=25)
-            self.expanding_testing_size_label.place(x=_ALIGN_X + 5, y=_ALIGN_Y + 125, width=100)
-            self.expanding_testing_size.place(x=_ALIGN_X + 110, y=_ALIGN_Y + 125, width=200, height=25)
-            self.expanding_gap_size_label.place(x=_ALIGN_X + 335, y=_ALIGN_Y + 125, width=100)
-            self.expanding_gap_size.place(x=_ALIGN_X + 440, y=_ALIGN_Y + 125, width=200, height=25)
-            self.expanding_expansion_rate_label.place(x=_ALIGN_X + 665, y=_ALIGN_Y + 125, width=100)
-            self.expanding_expansion_rate.place(x=_ALIGN_X + 770, y=_ALIGN_Y + 125, width=200, height=25)
+            self.expanding_training_size_label.place(x=_ALIGN_X,
+                                                     y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                     width=100)
+            self.expanding_training_size.place(x=_ALIGN_X + _LABEL_OFFSET
+                                                 + _X_100_UNIT_WIDTH_OFFSET,
+                                               y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                               width=200, height=25)
+            self.expanding_validation_size_label.place(x=_ALIGN_X + _LABEL_OFFSET + _X_ELEMENT_OFFSET
+                                                         + _X_100_UNIT_WIDTH_OFFSET
+                                                         + _X_200_UNIT_WIDTH_OFFSET,
+                                                       y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                       width=100)
+            self.expanding_validation_size.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                                   + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                                   + _X_200_UNIT_WIDTH_OFFSET,
+                                                 y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 2),
+                                                 width=200, height=25)
+            self.expanding_testing_size_label.place(x=_ALIGN_X,
+                                                    y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                                    width=100)
+            self.expanding_testing_size.place(x=_ALIGN_X + _LABEL_OFFSET + _X_100_UNIT_WIDTH_OFFSET,
+                                              y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                              width=200, height=25)
+            self.expanding_gap_size_label.place(x=_ALIGN_X + _LABEL_OFFSET + _X_ELEMENT_OFFSET
+                                                  + _X_100_UNIT_WIDTH_OFFSET
+                                                  + _X_200_UNIT_WIDTH_OFFSET,
+                                                y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                                width=100)
+            self.expanding_gap_size.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + _X_ELEMENT_OFFSET
+                                            + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                            + _X_200_UNIT_WIDTH_OFFSET,
+                                          y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                          width=200, height=25)
+            self.expanding_expansion_rate_label.place(x=_ALIGN_X + (_LABEL_OFFSET * 2) + (_X_ELEMENT_OFFSET * 2)
+                                                        + (_X_100_UNIT_WIDTH_OFFSET * 2)
+                                                        + (_X_200_UNIT_WIDTH_OFFSET * 2),
+                                                      y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                                      width=100)
+            self.expanding_expansion_rate.place(x=_ALIGN_X + (_LABEL_OFFSET * 3) + (_X_ELEMENT_OFFSET * 2)
+                                                  + (_X_100_UNIT_WIDTH_OFFSET * 3)
+                                                  + (_X_200_UNIT_WIDTH_OFFSET * 2),
+                                                y=_ALIGN_Y + (_Y_ELEMENT_OFFSET * 3),
+                                                width=200, height=25)
 
     def save_model(self):
+        """
+        Author: Alexander Cherry
+        Purpose: This function is used to save the trained model using the .h5 file type. A file explorer dialog opens
+        to select the location where the trained model will be saved.
+        :return:
+        """
         if self.trained_model is None:
             self.output_text.output('No model has been trained yet.')
             return
-        # Do Stuff
-        self.trained_model = None
+        save_loc = fdiag.asksaveasfilename(defaultextension=(MODEL_FILE_LABEL, MODEL_FILE_TYPE),
+                                           filetypes=[(MODEL_FILE_LABEL, MODEL_FILE_TYPE)])
+        if save_loc != '':
+            save_loc = save_loc if save_loc.endswith('.h5') else save_loc + '.h5'
+            self.trained_model.save(save_loc)
+            self.trained_model = None
 
     def train_model(self):
+        """
+        Author: Alexander Cherry
+        Purpose: This function is used to train the model using values in the input fields under the TrainMenu
+        :return:
+        """
         if self.training_csv is None:
             self.output_text.output('No CSV file has been selected as training data.')
             return
@@ -757,32 +993,53 @@ class TrainMenu(Menu):
                                                               epochs,
                                                               learning_rate, callbacks=[OutputEpoch(self.output_text,
                                                                                                     epochs)])
-        reporter = ModelEvaluationReporter(self.trained_model)
-        report = reporter(timeseries_data)
+        self.model_fit_reporter = ModelEvaluationReporter(self.trained_model)
+        report = self.model_fit_reporter(timeseries_data)
         self.output_text.append_output(f'Your model has finished training!\n'
                                        f'Press the "Save Model" button to save it as a file.\n'
                                        f'---------------------------------------------------\n'
                                        f'Model Performance:\n'
                                        f'{report}')
-        # Insert Model Evaluator
+        self.model_fit_reporter.save('hi')
 
     def generate_training_and_output_features(self):
-        self.training_features.delete(0, tk.END)
-        self.output_features.delete(0, tk.END)
-        for i in self.training_csv:
-            self.training_features.insert(tk.END, self.training_csv[i].name)
-        for i in self.training_csv:
-            self.output_features.insert(tk.END, self.training_csv[i].name)
+        """
+        Author: Marcus Kline
+        Purpose: This function is used to populate the training_features and output_features ListBoxes with the columns
+        from the uploaded csv (if one has been uploaded) for a user to select from.
+        :return:
+        """
+        if self.training_csv is not None:
+            self.training_features.delete(0, tk.END)
+            self.output_features.delete(0, tk.END)
+            for i in self.training_csv:
+                self.training_features.insert(tk.END, self.training_csv[i].name)
+            for i in self.training_csv:
+                self.output_features.insert(tk.END, self.training_csv[i].name)
 
     def upload_csv(self):
-        new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
-        if new_data is not None:
-            df = pd.read_csv(new_data)
+        """
+        Author:Marcus Kline
+        Purpose: This function is used to upload a csv which is then used to populate the training_features and
+        output_features ListBoxes
+        :return:
+        """
+        self.path_to_csv = fdiag.askopenfilename(filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
+        if self.path_to_csv is not None:
+            df = pd.read_csv(self.path_to_csv)
             self.training_csv = df.select_dtypes(include=[np.number])
             self.generate_training_and_output_features()
+            self.csv_selection_label.config(text=os.path.basename(self.path_to_csv))
 
     def upload_schema(self):
-        self.path_to_model_schema = filedialog.askopenfilename(filetypes=[(JSON_FILE_LABEL, JSON_FILE_TYPE)])
+        """
+        Author: Marcus Kline
+        Purpose: This function is used to upload a schema in the form of a JSON file. This is then used in the
+        train_model function
+        :return: 
+        """
+        self.path_to_model_schema = fdiag.askopenfilename(filetypes=[(JSON_FILE_LABEL, JSON_FILE_TYPE)])
+        self.schema_selection_label.config(text=os.path.basename(self.path_to_model_schema))
 
 
 class ClimateChangeMenu(Menu):
@@ -830,6 +1087,7 @@ class ClimateChangeMenu(Menu):
             self.tool_frame,
             bg=BUTTON_BACKGROUND,
             fg=BUTTON_FOREGROUND,
+            selectmode=tk.EXTENDED
         )
 
     def draw(self):
@@ -858,9 +1116,12 @@ class ClimateChangeMenu(Menu):
         figure = Figure(figsize=(7, 5), dpi=100, constrained_layout=True)
         plot1 = figure.add_subplot(111)
         plot1.grid()
-        plot1.set_ylabel(str(self.data_selection_box.get(tk.ACTIVE)))
+        selected_data = [self.data_selection_box.get(i) for i in self.data_selection_box.curselection()]
+        plot1.set_ylabel(','.join(map(str, selected_data)))
         plot1.set_xlabel('Dates')
-        plot1.plot(self.dates, self.source_data[str(self.data_selection_box.get(tk.ACTIVE))])
+        for field in selected_data:
+            plot1.plot(self.dates, self.source_data[field])
+        plot1.legend(selected_data, loc='upper right')
         canvas = FigureCanvasTkAgg(figure, master=self.graph_frame)
         canvas.draw()
         canvas.get_tk_widget().pack()
@@ -894,7 +1155,13 @@ class ClimateChangeMenu(Menu):
         table.redraw()
 
     def upload_data(self):
-        new_data = filedialog.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
+        """
+        Author: Marcus Kline
+        Purpose: This function is used to upload a csv file to be used for plotting its data, displaying it in a
+        table, and populating the data_viewer listbox
+        :return: 
+        """
+        new_data = fdiag.askopenfile(mode='r', filetypes=[(CSV_FILE_LABEL, CSV_FILE_TYPE)])
         if new_data is not None:
             self.source_data = pd.read_csv(new_data, parse_dates=True)
             self.populate_data_picker()

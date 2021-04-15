@@ -6,6 +6,7 @@ import tensorflow as tf
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import SimpleImputer, IterativeImputer
 
+from AIForecast.sysutils.pathing import FolderStructure
 from AIForecast.sysutils.sysexceptions import TimeseriesTransformationError
 
 # ----------------- Data Classes : ----------------- #
@@ -36,6 +37,7 @@ class DataSplit:
 
 class SampleSet:
     def __init__(self):
+        self.index = None
         self.__inputs: np.array = np.array([])
         self.__labels: np.array = np.array([])
         self.__append = self.__init_append
@@ -48,6 +50,7 @@ class SampleSet:
         :param labels:
         :return:
         """
+        self.index = sample.index
         multi_featured = len(labels) > 1 or len(labels.columns) > 1
         self.__inputs = np.array([sample.to_numpy()])
         label_set = np.array([labels.to_numpy()]) if multi_featured else labels.to_numpy().flatten()
@@ -61,6 +64,7 @@ class SampleSet:
         :param labels:
         :return:
         """
+        self.index = self.index.append(sample.index)
         multi_featured = len(labels) > 1 or len(labels.columns) > 1
         self.__inputs = np.concatenate((self.__inputs, [sample.to_numpy()]))
         label_set = np.array([labels.to_numpy()]) if multi_featured else labels.to_numpy().flatten()
@@ -122,10 +126,10 @@ class DataImputer:
                                             imputation_order='arabic')
         elif self.imputer_type == 'Simple':
             self.imputer = SimpleImputer(missing_values=np.nan)
+        elif self.imputer_type == 'None':
+            self.imputer = SimpleImputer(missing_values=np.nan, strategy='constant', fill_value=0)
 
     def __call__(self, data: pd.DataFrame):
-        if self.imputer_type == 'None':
-            return data
         return pd.DataFrame(self.imputer.fit_transform(data), columns=data.columns)
 
 
@@ -362,9 +366,35 @@ class ForecastModelTrainer:
 class ModelEvaluationReporter:
     def __init__(self, trained_model: tf.keras.Model):
         self.model: tf.keras.Model = trained_model
+        self.train_fit: pd.DataFrame = None
+        self.test_fit: pd.DataFrame = None
 
-    def __call__(self, sample_set: List[TimeseriesData]) -> str:
+    def __call__(self,
+                 sample_set: List[TimeseriesData],
+                 generate_train_report: bool = True,
+                 generate_test_report: bool = True) -> str:
+        for sample in sample_set:
+            if generate_train_report:
+                sample_df = self.__sample_to_dataframe(sample.training_samples, sample.out_cols)
+                self.train_fit = sample_df if self.train_fit is None else self.train_fit.append(sample_df)
+            if generate_test_report:
+                sample_df = self.__sample_to_dataframe(sample.test_samples, sample.out_cols)
+                self.test_fit = sample_df if self.test_fit is None else self.test_fit.append(sample_df)
         return 'Yet to be implemented!'
+
+    def __sample_to_dataframe(self, _set: SampleSet, out_cols: List[str]) -> pd.DataFrame:
+        cols = out_cols.copy()
+        for out in out_cols:
+            cols.append(f'{out}_fit')
+        ground_truth = _set.labels
+        pred = self.model.predict(_set.samples, ground_truth.all())
+        model_fit = np.hstack([np.vstack([t for t in ground_truth]), np.vstack([p for p in pred])])
+        return pd.DataFrame(model_fit, columns=cols, index=_set.index)
+
+    def save(self, file_loc: str):
+        # Todo: Make this work
+        self.train_fit.to_csv(f'{FolderStructure.CLIMATE_DATA_DIR.get_path()}\\model_training_report.csv')
+        self.test_fit.to_csv(f'{FolderStructure.CLIMATE_DATA_DIR.get_path()}\\model_testing_report.csv')
 
 
 # File Selector : csv file -> Training
