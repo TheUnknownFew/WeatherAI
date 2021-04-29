@@ -11,9 +11,9 @@ from tensorflow import keras
 
 from AIForecast.modeling import dataprocessing as pipeline
 from AIForecast.modeling.dataprocessing import ModelEvaluationReporter
-from AIForecast.modeling.tfcallbacks import OutputEpoch
+from AIForecast.modeling.tfcallbacks import OutputEpoch, CancelModelTraining
 from AIForecast.ui.widgets import MenuWindow, OutputWindow
-from AIForecast.ui import constants as ui
+from AIForecast.ui import uiconsts as ui
 from AIForecast.weather import ClimateAccess
 
 
@@ -48,7 +48,9 @@ class TestMenu(MenuWindow):
     def __init__(self, app_frame: tk.Frame):
         super().__init__(app_frame)
         self.upload_trained_model_button = None
-        self.trained_model = None
+        self.upload_test_csv_button = None
+        self.path_to_trained_model = ''
+        self.path_to_test_csv = ''
         self.output_frame = None
         self.input_frame = None
         self.time_horizon = None
@@ -67,7 +69,14 @@ class TestMenu(MenuWindow):
             fg=ui.BUTTON_FOREGROUND,
             command=lambda: self.upload_trained_model()
         )
-        self.time_horizon_label = tk.Label(self.input_frame, text="Time Horizon (Hours)", bg=ui.BACKGROUND_COLOR,
+        self.upload_test_csv_button = tk.Button(
+            self.input_frame,
+            text="Upload Test CSV",
+            bg=ui.BUTTON_BACKGROUND,
+            fg=ui.BUTTON_FOREGROUND,
+            command=lambda: self.upload_test_csv()
+        )
+        self.time_horizon_label = tk.Label(self.input_frame, text="Time Horizon (time steps)", bg=ui.BACKGROUND_COLOR,
                                            fg=ui.FOREGROUND_COLOR, anchor="w")
         self.time_horizon = tk.Text(self.input_frame)
         self.test_button = tk.Button(
@@ -87,15 +96,17 @@ class TestMenu(MenuWindow):
         self.output_frame.place(relx=.2, rely=0, relwidth=.8, relheight=1)
         self.input_frame.place(relx=0, rely=0, relwidth=.2, relheight=1)
         self.upload_trained_model_button.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 5, width=150)
-        self.time_horizon_label.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 45, width=150)
-        self.time_horizon.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 70, width=150, height=25)
+        self.upload_test_csv_button.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 45, width=150)
+        self.time_horizon_label.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 80, width=150)
+        self.time_horizon.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 105, width=150, height=25)
         self.output_text_label.place(relx=.05)
         self.output_text.draw(relx=.05, rely=.05, relwidth=.9, relheight=.9)
-        self.test_button.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 125, width=150)
+        self.test_button.place(x=ui.ALIGN_X + 5, y=ui.ALIGN_Y + 150, width=150)
 
     def hide(self):
         super().hide()
         self.upload_trained_model_button.destroy()
+        self.upload_test_csv_button.destroy()
         self.output_frame.destroy()
         self.input_frame.destroy()
         self.time_horizon.destroy()
@@ -109,12 +120,27 @@ class TestMenu(MenuWindow):
         Purpose: This function is used to upload an already trained model that would be used to test
         :return:
         """
-        new_data = fdiag.askopenfile(mode='r', filetypes=[(ui.MODEL_FILE_LABEL, ui.MODEL_FILE_TYPE)])
-        if new_data is not None:
-            self.trained_model = pd.read_csv(new_data)
+        model_path = fdiag.askopenfilename(filetypes=[(ui.MODEL_FILE_LABEL, ui.MODEL_FILE_TYPE)])
+        if model_path != '':
+            self.path_to_trained_model = model_path
+
+    def upload_test_csv(self):
+        test_csv_path = fdiag.askopenfilename(filetypes=[(ui.NPY_FILE_LABEL, ui.NPY_FILE_TYPE)])
+        if test_csv_path != '':
+            self.path_to_test_csv = test_csv_path
 
     def test_model(self):
-        pass
+        horizon = -1
+        try:
+            horizon = int(self.time_horizon.get("1.0", "end-1c"))
+            if horizon <= 0:
+                raise ValueError
+        except ValueError:
+            self.output_text.output('Time horizon is not a valid non-zero positive integer.')
+        if self.path_to_test_csv != '' and self.path_to_trained_model != '' and horizon > 0:
+            self.output_text.output('')
+            forcaster = pipeline.ModelForecaster(self.path_to_trained_model, self.path_to_test_csv)
+            forcaster.forecast(horizon)
 
 
 class TrainMenu(MenuWindow):
@@ -700,9 +726,25 @@ class TrainMenu(MenuWindow):
         Purpose: This function is used to train the model using values in the input fields under the TrainMenu
         :return:
         """
+        exit_out = False
         if self.training_csv is None:
-            self.output_text.output('No CSV file has been selected as training data.')
+            self.output_text.output('- No CSV file has been selected as training data.')
+            exit_out = True
+        if self.path_to_model_schema is None:
+            self.output_text.append_output('- Could not train model. No model JSON selected.')
+            exit_out = True
+        if len(self.training_features.curselection()) == 0:
+            self.output_text.append_output('- No training features selected.')
+            exit_out = True
+        if len(self.output_features.curselection()) == 0:
+            self.output_text.append_output('- No output features selected.')
+            exit_out = True
+        if exit_out:
+            self.output_text.append_output('----------------------------------\n\n')
             return
+
+        self.output_text.output('Training has started...')
+        model_path = self.path_to_model_schema
         imputer = self.imputer_selection.get()
         imputed_data = pipeline.DataImputer(imputer)(self.training_csv)
         split = self.split_type_selection.get()
@@ -712,18 +754,18 @@ class TrainMenu(MenuWindow):
             val_size = self.straight_validation_slider.get() / 100
             splits = pipeline.StraightSplit(train_size, val_size)(imputed_data)
         elif split == 'Rolling Split':
-            train_size = self.rolling_training_size.get()
-            test_size = self.rolling_testing_size.get()
-            val_size = self.rolling_validation_size.get()
-            stride = self.rolling_stride_size.get()
-            gap = self.rolling_gap_size.get()
+            train_size = int(self.rolling_training_size.get("1.0", "end-1c"))
+            test_size = int(self.rolling_testing_size.get("1.0", "end-1c"))
+            val_size = int(self.rolling_validation_size.get("1.0", "end-1c"))
+            stride = int(self.rolling_stride_size.get("1.0", "end-1c"))
+            gap = int(self.rolling_gap_size.get("1.0", "end-1c"))
             splits = pipeline.RollingSplit(train_size, test_size, val_size, stride, gap)(imputed_data)
         elif split == 'Expanding Split':
-            train_size = self.expanding_training_size.get()
-            test_size = self.expanding_testing_size.get()
-            val_size = self.expanding_validation_size.get()
-            expansion_rate = self.expanding_expansion_rate.get()
-            gap = self.expanding_gap_size.get()
+            train_size = int(self.expanding_training_size.get("1.0", "end-1c"))
+            test_size = int(self.expanding_testing_size.get("1.0", "end-1c"))
+            val_size = int(self.expanding_validation_size.get("1.0", "end-1c"))
+            expansion_rate = int(self.expanding_expansion_rate.get("1.0", "end-1c"))
+            gap = int(self.expanding_gap_size.get("1.0", "end-1c"))
             splits = pipeline.ExpandingSplit(train_size, test_size, val_size, expansion_rate, gap)(imputed_data)
         normalizer = self.normalization_selection.get()
         normalized_splits = None
@@ -743,25 +785,29 @@ class TrainMenu(MenuWindow):
                                                                    width_out,
                                                                    transformer_stride,
                                                                    time_offset)(normalized_splits)
-        model_path = self.path_to_model_schema
         epochs = int(self.epoch.get("1.0", "end-1c"))
         learning_rate = float(self.learning_rate.get("1.0", "end-1c"))
-        self.trained_model = pipeline.ForecastModelTrainer(model_path)(
+        interrupt_running = CancelModelTraining(self.output_text)
+        self.cancel_button.configure(command=interrupt_running.cancel_training)
+        self.trained_model, history, report = pipeline.ForecastModelTrainer(model_path)(
             timeseries_data,
             epochs,
             learning_rate,
-            callbacks=[OutputEpoch(self.output_text, epochs)]
+            callbacks=[OutputEpoch(self.output_text, epochs), interrupt_running]
         )
-        self.model_fit_reporter = ModelEvaluationReporter(self.trained_model)
-        report = self.model_fit_reporter(timeseries_data)
-        self.output_text.append_output(f'Your model has finished training!\n'
-                                       f'Press the "Save Model" button to save it as a file.\n'
-                                       f'---------------------------------------------------\n'
-                                       f'Model Performance:\n'
-                                       f'{report}')
+        if not interrupt_running.canceled:
+            self.model_fit_reporter = ModelEvaluationReporter(self.trained_model, history)
+            self.model_fit_reporter(timeseries_data)
+            self.output_text.append_output(f'Your model has finished training!\n'
+                                           f'Press the "Save Model" button to save it as a file.\n'
+                                           f'---------------------------------------------------\n'
+                                           f'Model Performance:\n'
+                                           f'{report}')
+        else:
+            self.trained_model = None
 
     def cancel_training_model(self):
-        pass
+        self.output_text.output('No model is currently being trained.')
 
     def generate_training_and_output_features(self):
         """
@@ -786,7 +832,7 @@ class TrainMenu(MenuWindow):
         :return:
         """
         self.path_to_csv = fdiag.askopenfilename(filetypes=[(ui.CSV_FILE_LABEL, ui.CSV_FILE_TYPE)])
-        if self.path_to_csv is not None:
+        if self.path_to_csv != '':
             df = pd.read_csv(self.path_to_csv, parse_dates=True)
             self.training_csv = df.select_dtypes(include=[np.number])
             self.generate_training_and_output_features()
@@ -886,11 +932,11 @@ class ClimateChangeMenu(MenuWindow):
         if self.dates is not None:
             source_data_plot.set_xlabel('Dates')
             for field in selected_data:
-                source_data_plot.plot(self.dates, self.source_data[field])
+                source_data_plot.plot(self.dates, self.source_data[field], marker='o', markersize=2)
         else:
             source_data_plot.set_xlabel('Index')
             for field in selected_data:
-                source_data_plot.plot(self.source_data.index, self.source_data[field])
+                source_data_plot.plot(self.source_data.index, self.source_data[field], marker='o', markersize=2)
         source_data_plot.legend(selected_data, loc='upper right')
         canvas = FigureCanvasTkAgg(figure, master=self.graph_frame)
         canvas.draw()

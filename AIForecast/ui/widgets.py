@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Dict
 
 from AIForecast import utils
-from AIForecast.ui import constants as ui
+from AIForecast.ui import uiconsts as ui
 
 
 class Menus(Enum):

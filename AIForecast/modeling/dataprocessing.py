@@ -1,4 +1,4 @@
-from typing import List, Callable, Tuple, Union
+from typing import List, Callable, Tuple, Dict
 
 import pandas as pd
 import numpy as np
@@ -6,7 +6,6 @@ import tensorflow as tf
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import SimpleImputer, IterativeImputer
 
-from AIForecast.sysutils.pathing import FolderStructure
 from AIForecast.sysutils.sysexceptions import TimeseriesTransformationError
 
 # ----------------- Data Classes : ----------------- #
@@ -37,7 +36,6 @@ class DataSplit:
 
 class SampleSet:
     def __init__(self):
-        self.index = None
         self.__inputs: np.array = np.array([])
         self.__labels: np.array = np.array([])
         self.__append = self.__init_append
@@ -50,7 +48,6 @@ class SampleSet:
         :param labels:
         :return:
         """
-        self.index = sample.index
         multi_featured = len(labels) > 1 or len(labels.columns) > 1
         self.__inputs = np.array([sample.to_numpy()])
         label_set = np.array([labels.to_numpy()]) if multi_featured else labels.to_numpy().flatten()
@@ -64,7 +61,6 @@ class SampleSet:
         :param labels:
         :return:
         """
-        self.index = self.index.append(sample.index)
         multi_featured = len(labels) > 1 or len(labels.columns) > 1
         self.__inputs = np.concatenate((self.__inputs, [sample.to_numpy()]))
         label_set = np.array([labels.to_numpy()]) if multi_featured else labels.to_numpy().flatten()
@@ -129,7 +125,7 @@ class DataImputer:
         elif self.imputer_type == 'None':
             self.imputer = SimpleImputer(missing_values=np.nan, strategy='constant', fill_value=0)
 
-    def __call__(self, data: pd.DataFrame):
+    def __call__(self, data: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(self.imputer.fit_transform(data), columns=data.columns)
 
 
@@ -265,6 +261,7 @@ class ZStandardizer:
             split.train_split = (split.train_split - mean) / std
             split.validation_split = (split.validation_split - mean) / std
             split.test_split = (split.test_split - mean) / std
+            split.parent_data = (split.parent_data - mean) / std
         return self.splits
 
 
@@ -282,6 +279,7 @@ class MinMaxNormalizer:
             split.train_split = self.a + ((split.train_split - split_min) * ab_diff) / min_max_diff
             split.validation_split = self.a + ((split.validation_split - split_min) * ab_diff) / min_max_diff
             split.test_split = self.a + ((split.test_split - split_min) * ab_diff) / min_max_diff
+            split.parent_data = self.a + ((split.parent_data - split_min) * ab_diff) / min_max_diff
         return self.splits
 
 
@@ -306,15 +304,22 @@ class SupervisedTimeseriesTransformer:
 
     def __make_timeseries_samples(self, split: DataSplit) -> TimeseriesData:
         series = TimeseriesData(self.output_columns, self.width_out)
-        self.__make_samples(split.parent_data, split.train_split, series.training_samples)
-        self.__make_samples(split.parent_data, split.validation_split, series.validation_samples)
-        self.__make_samples(split.parent_data, split.test_split, series.test_samples, True)
+        self.__make_samples(split.parent_data,
+                            split.train_split,
+                            series.training_samples,
+                            0)
+        self.__make_samples(split.parent_data,
+                            split.validation_split,
+                            series.validation_samples,
+                            len(series.training_samples.samples))
+        self.__make_samples(split.parent_data,
+                            split.test_split,
+                            series.test_samples,
+                            len(series.training_samples.samples) + len(series.validation_samples.samples),
+                            True)
         return series
 
-    def __make_samples(self,
-                       data_set: pd.DataFrame,
-                       split: pd.DataFrame,
-                       sample_set: SampleSet,
+    def __make_samples(self, data_set: pd.DataFrame, split: pd.DataFrame, sample_set: SampleSet, offset: int,
                        is_test_set: bool = False):
         split_size = len(split)
         for idx in [idx for idx in range(0, split_size, self.stride) if idx + self.width_in <= split_size]:
@@ -322,7 +327,7 @@ class SupervisedTimeseriesTransformer:
             if is_test_set and end_idx - split_size >= 0:
                 break
             sample = split[self.input_columns].iloc[idx:self.width_in+idx]
-            labels = data_set[self.output_columns].iloc[end_idx-self.width_out:end_idx]
+            labels = data_set[self.output_columns].iloc[(end_idx-self.width_out)+offset:end_idx+offset]
             if len(labels) < self.width_out:
                 raise TimeseriesTransformationError(
                     f'input width {self.width_in}, output width {self.width_out}, stride {self.stride},'
@@ -335,12 +340,14 @@ class ForecastModelTrainer:
     def __init__(self, path_to_model: str):
         with open(path_to_model, 'r') as f:
             self.model: tf.keras.Model = tf.keras.models.model_from_json(f.read())
+            self.train_evaluation: pd.DataFrame = None
+            self.test_evaluation: pd.DataFrame = None
 
     def __call__(self,
                  sample_set: List[TimeseriesData],
                  epochs=10,
                  learning_rate=0.001,
-                 callbacks: List[tf.keras.callbacks.Callback] = None) -> tf.keras.Model:
+                 callbacks: List[tf.keras.callbacks.Callback] = None) -> Tuple[tf.keras.Model, pd.DataFrame, str]:
         num_features = len(sample_set[0].out_cols)
         steps_out = sample_set[0].num_steps
         output_layer = tf.keras.layers.Dense(units=num_features * steps_out)
@@ -350,6 +357,7 @@ class ForecastModelTrainer:
         self.model.compile(optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
                            loss=['mae', 'mse'],
                            metrics=['mae', 'accuracy', 'cosine_similarity'])
+        history = None
         for samples in sample_set:
             val_set = (samples.validation_samples.samples, samples.validation_samples.labels) \
                 if len(samples.validation_samples.samples) > 0 else None
@@ -360,37 +368,80 @@ class ForecastModelTrainer:
                 validation_data=val_set,
                 callbacks=callbacks
             )
-        return self.model
+            history = pd.DataFrame(self.model.history.history)
+            train_eval = self.model.evaluate(samples.training_samples.samples,
+                                             samples.training_samples.labels,
+                                             return_dict=True)
+            if self.train_evaluation is None:
+                self.train_evaluation = pd.DataFrame(train_eval, index=[0])
+            else:
+                self.train_evaluation.append(train_eval, ignore_index=True)
+            test_eval = self.model.evaluate(samples.test_samples.samples,
+                                            samples.test_samples.labels,
+                                            return_dict=True)
+            if self.test_evaluation is None:
+                self.test_evaluation = pd.DataFrame(test_eval, index=[0])
+            else:
+                self.test_evaluation.append(test_eval, ignore_index=True)
+
+        report = 'Training Evaluation:\n' + self.train_evaluation.mean().to_string()
+        report += '\n\nTesting Evaluation:\n' + self.test_evaluation.mean().to_string()
+        return self.model, history, report
 
 
 class ModelEvaluationReporter:
-    def __init__(self, trained_model: tf.keras.Model):
+    def __init__(self, trained_model: tf.keras.Model, model_history: pd.DataFrame):
         self.model: tf.keras.Model = trained_model
+        self.model_history: pd.DataFrame = model_history
         self.train_fit: pd.DataFrame = None
         self.test_fit: pd.DataFrame = None
 
-    def __call__(self,
-                 sample_set: List[TimeseriesData],
-                 generate_train_report: bool = True,
-                 generate_test_report: bool = True) -> str:
+    def __call__(self, sample_set: List[TimeseriesData]):
         for sample in sample_set:
-            if generate_train_report:
-                sample_df = self.__sample_to_dataframe(sample.training_samples, sample.out_cols)
-                self.train_fit = sample_df if self.train_fit is None else self.train_fit.append(sample_df)
-            if generate_test_report:
-                sample_df = self.__sample_to_dataframe(sample.test_samples, sample.out_cols)
-                self.test_fit = sample_df if self.test_fit is None else self.test_fit.append(sample_df)
-        return 'Yet to be implemented!'
+            train_df = self.__sample_to_dataframe(sample.training_samples, sample.out_cols)
+            self.train_fit = train_df if self.train_fit is None else self.train_fit.append(train_df)
+            test_df = self.__sample_to_dataframe(sample.test_samples, sample.out_cols)
+            self.test_fit = test_df if self.test_fit is None else self.test_fit.append(test_df)
 
     def __sample_to_dataframe(self, _set: SampleSet, out_cols: List[str]) -> pd.DataFrame:
-        cols = out_cols.copy()
-        for out in out_cols:
-            cols.append(f'{out}_fit')
         ground_truth = _set.labels
-        pred = self.model.predict(_set.samples, ground_truth.all())
-        model_fit = np.hstack([np.vstack([t for t in ground_truth]), np.vstack([p for p in pred])])
-        return pd.DataFrame(model_fit, columns=cols, index=_set.index)
+        pred = self.model.predict(_set.samples)
+        cols = self.__columns(ground_truth.shape, out_cols)
+        col_len = len(cols) // 2
+        model_fit = np.hstack([ground_truth.reshape(-1, col_len), pred.reshape(-1, col_len)])
+        return pd.DataFrame(model_fit, columns=cols)
+
+    @staticmethod
+    def __columns(shape: Tuple, out_cols: List[str]) -> List[str]:
+        cols = []
+        if len(shape) == 1:
+            cols = out_cols.copy()
+            for col in out_cols:
+                cols.append(f'{col}_fit')
+        else:
+            for i in range(shape[1]):
+                for col in out_cols:
+                    cols.append(f'{col}_t+{i}')
+            for i in range(shape[1]):
+                for col in out_cols:
+                    cols.append(f'{col}_t+{i}_fit')
+        return cols
 
     def save(self, file_loc: str):
         self.train_fit.to_csv(f'{file_loc}_training_report.csv')
         self.test_fit.to_csv(f'{file_loc}_testing_report.csv')
+        self.model_history.to_csv(f'{file_loc}_learning_curve.csv')
+
+
+class ModelForecaster:
+    def __init__(self, model_path: str, test_csv: str):
+        self.model: tf.keras.Model = tf.keras.models.load_model(model_path)
+        self.test_np = np.load(test_csv)
+
+    def forecast(self, time_horizon: int):
+        # Currently does not work and needs to be implemented.
+        model_in_shape = self.model.input_shape
+        curr = self.model.predict(self.test_np)
+        for _ in range(time_horizon):
+            curr = np.atleast_3d(curr[-1]) if curr.ndim < len(model_in_shape) else np.expand_dims(curr[-1], 1)
+            print(self.model.predict(curr))
